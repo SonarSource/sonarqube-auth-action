@@ -52,7 +52,7 @@ The organization and project key come back with the token, and are available as 
 
 | Input | Default | Description |
 |---|---|---|
-| `sonar-host-url` | `https://sonarcloud.io` | SonarQube Cloud instance: `https://sonarcloud.io`, `https://sonarqube.us` or `https://sonarqube.au`. |
+| `sonar-host-url` | `https://sonarcloud.io` | SonarQube Cloud instance: `https://sonarcloud.io` or `https://sonarqube.us`. |
 | `export-env` | `true` | Export `SONAR_TOKEN` and `SONAR_HOST_URL` to the next steps of the job. |
 
 ## Outputs

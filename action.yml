@@ -5,12 +5,12 @@ description: >
   No stored secret required. Run it right before the SonarQube scan.
 
 branding:
-  icon: key
+  icon: log-in
   color: green
 inputs:
   sonar-host-url:
     description: >
-      URL of the SonarQube Cloud instance: https://sonarcloud.io (default), https://sonarqube.us or https://sonarqube.au.
+      URL of the SonarQube Cloud instance: https://sonarcloud.io (default) or https://sonarqube.us.
     required: false
     default: https://sonarcloud.io
   export-env:

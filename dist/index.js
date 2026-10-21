@@ -21523,7 +21523,7 @@ async function exchangeToken(request, { fetchFn = fetch, sleepFn = defaultSleep,
 
 // src/main/hosts.js
 var DEFAULT_HOST_URL = "https://sonarcloud.io";
-var SUPPORTED_HOSTNAMES = ["sonarcloud.io", "sonarqube.us", "sonarqube.au"];
+var SUPPORTED_HOSTNAMES = ["sonarcloud.io", "sonarqube.us"];
 function resolveTarget(rawHostUrl) {
   let url;
   try {

@@ -37,10 +37,6 @@ describe("resolveTarget", () => {
     });
   });
 
-  it("resolves the AU host", () => {
-    assert.equal(resolveTarget("https://sonarqube.au").endpoint, "https://api.sonarqube.au/authentication/token");
-  });
-
   it("ignores trailing slash, path, case and surrounding whitespace", () => {
     assert.equal(resolveTarget("  HTTPS://SonarCloud.IO/some/path/  ").hostUrl, "https://sonarcloud.io");
   });
@@ -48,7 +44,7 @@ describe("resolveTarget", () => {
   it("rejects an unsupported host and lists the supported ones", () => {
     assert.throws(
       () => resolveTarget("https://sonar.example.com"),
-      /Unsupported sonar-host-url 'https:\/\/sonar\.example\.com'.*https:\/\/sonarcloud\.io, https:\/\/sonarqube\.us, https:\/\/sonarqube\.au/,
+      /Unsupported sonar-host-url 'https:\/\/sonar\.example\.com'.*https:\/\/sonarcloud\.io, https:\/\/sonarqube\.us\./,
     );
   });
 

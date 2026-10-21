@@ -18,7 +18,7 @@
 
 export const DEFAULT_HOST_URL = "https://sonarcloud.io";
 
-export const SUPPORTED_HOSTNAMES = ["sonarcloud.io", "sonarqube.us", "sonarqube.au"];
+export const SUPPORTED_HOSTNAMES = ["sonarcloud.io", "sonarqube.us"];
 
 export function resolveTarget(rawHostUrl) {
   let url;
