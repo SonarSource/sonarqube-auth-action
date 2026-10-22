@@ -28,7 +28,8 @@ jobs:
       - uses: SonarSource/sonarqube-scan-action@v8
 ```
 
-There is no `SONAR_TOKEN` to configure: the action exports `SONAR_TOKEN` and `SONAR_HOST_URL` for the following steps, which is what the scan action and the SonarScanners read.
+There is no `SONAR_TOKEN` to configure: the action exports `SONAR_TOKEN` and `SONAR_HOST_URL` for the following steps,
+which is what the scan action and the SonarScanners read.
 
 The organization and project key come back with the token, and are available as outputs when you need them:
 
@@ -66,9 +67,12 @@ The organization and project key come back with the token, and are available as 
 
 ## Security
 
-- The token lasts 30 minutes and can only analyze the project bound to the repository. Run the action right before the scan, not at the start of a long job.
-- With `export-env: true`, every following step of the job can read `SONAR_TOKEN`, including third-party actions. Set `export-env: false` and pass the `sonar-token` output only to the steps that need it if that matters to you.
-- Workflows triggered by pull requests from forks do not get the `id-token: write` permission, so the action fails there. That is a GitHub restriction, and it is what keeps the exchange out of reach of untrusted code.
+- The token lasts 30 minutes and can only analyze the project bound to the repository.
+  Run the action right before the scan, not at the start of a long job.
+- With `export-env: true`, every following step of the job can read `SONAR_TOKEN`, including third-party actions.
+  Set `export-env: false` and pass the `sonar-token` output only to the steps that need it if that matters to you.
+- Workflows triggered by pull requests from forks do not get the `id-token: write` permission, so the action fails there.
+  That is a GitHub restriction, and it is what keeps the exchange out of reach of untrusted code.
 
 ## Troubleshooting
 
