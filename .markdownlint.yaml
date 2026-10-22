@@ -1,6 +1,12 @@
 # https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
 default: true
 
+MD033: # Inline HTML, for the logo that follows the color scheme
+  allowed_elements:
+    - picture
+    - source
+    - img
+
 MD013:
   line_length: 140
   tables: false
