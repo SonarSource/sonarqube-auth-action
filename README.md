@@ -25,13 +25,22 @@ jobs:
         with:
           fetch-depth: 0
       - uses: SonarSource/sonarqube-auth-action@v1
+        id: auth
       - uses: SonarSource/sonarqube-scan-action@v8
+        with:
+          args: >
+            -Dsonar.organization=${{ steps.auth.outputs.organization }}
+            -Dsonar.projectKey=${{ steps.auth.outputs.project-key }}
 ```
 
 There is no `SONAR_TOKEN` to configure: the action exports `SONAR_TOKEN` and `SONAR_HOST_URL` for the following steps,
 which is what the scan action and the SonarScanners read.
 
-The organization and project key come back with the token, and are available as outputs when you need them:
+The organization and project key come back with the token, as the `organization` and `project-key` outputs.
+The scanner needs both, so pass them as above. If your `sonar-project.properties` already sets `sonar.organization` and `sonar.projectKey`,
+you can drop the `id` and the `args`.
+
+Other scanners read the same outputs, for example Gradle:
 
 ```yaml
 - uses: SonarSource/sonarqube-auth-action@v1
@@ -49,9 +58,14 @@ Set `sonar-host-url` to target the US instance. The default is the EU instance, 
 
 ```yaml
 - uses: SonarSource/sonarqube-auth-action@v1
+  id: auth
   with:
     sonar-host-url: https://sonarqube.us
 - uses: SonarSource/sonarqube-scan-action@v8
+  with:
+    args: >
+      -Dsonar.organization=${{ steps.auth.outputs.organization }}
+      -Dsonar.projectKey=${{ steps.auth.outputs.project-key }}
 ```
 
 With `export-env: true`, the action exports `SONAR_HOST_URL=https://sonarqube.us` together with the token, so the scan step needs no other change.
@@ -69,6 +83,10 @@ If you set `export-env: false`, pass the values to the scan yourself:
   env:
     SONAR_TOKEN: ${{ steps.auth.outputs.sonar-token }}
     SONAR_HOST_URL: ${{ steps.auth.outputs.sonar-host-url }}
+  with:
+    args: >
+      -Dsonar.organization=${{ steps.auth.outputs.organization }}
+      -Dsonar.projectKey=${{ steps.auth.outputs.project-key }}
 ```
 
 ## Prerequisites
