@@ -9,7 +9,8 @@
   },
   "scripts": {
     "build": "esbuild src/main/index.js --bundle --platform=node --target=node24 --format=esm --sourcemap --banner:js=\"import { createRequire } from 'node:module'; const require = createRequire(import.meta.url);\" --outfile=dist/index.js",
-    "test": "node --test"
+    "test": "node --test",
+    "test:coverage": "mkdir -p coverage && node --test --experimental-test-coverage --test-reporter=spec --test-reporter-destination=stdout --test-reporter=lcov --test-reporter-destination=coverage/lcov.info"
   },
   "license": "LGPL-3.0-only",
   "dependencies": {

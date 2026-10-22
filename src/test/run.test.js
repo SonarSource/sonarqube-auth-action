@@ -110,6 +110,18 @@ describe("run", () => {
     assert.ok(state.infos.every((message) => !message.includes("sqco_secret")));
   });
 
+  it("reports the validity only when the server returns an expiry", async () => {
+    const withExpiry = fakeCore();
+    await run(withExpiry.core, { fetchFn: replyingWith(200, SUCCESS_BODY).fetchFn });
+
+    const withoutExpiry = fakeCore();
+    await run(withoutExpiry.core, { fetchFn: replyingWith(200, { ...SUCCESS_BODY, expires_in: undefined }).fetchFn });
+
+    assert.ok(withExpiry.state.infos.includes("Obtained a SonarQube token for organization 'acme' and project 'acme_app', valid for 30 minutes."));
+    assert.ok(withoutExpiry.state.infos.includes("Obtained a SonarQube token for organization 'acme' and project 'acme_app'."));
+    assert.equal(withoutExpiry.state.failure, undefined);
+  });
+
   it("targets the host given as input", async () => {
     const { core, state } = fakeCore({ "sonar-host-url": "https://sonarqube.us" });
     const { fetchFn, calls } = replyingWith(200, SUCCESS_BODY);

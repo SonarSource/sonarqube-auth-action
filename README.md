@@ -43,6 +43,34 @@ The organization and project key come back with the token, and are available as 
       "sonar.projectKey": "${{ steps.auth.outputs.project-key }}"}
 ```
 
+### SonarQube Cloud US
+
+Set `sonar-host-url` to target the US instance. The default is the EU instance, `https://sonarcloud.io`.
+
+```yaml
+- uses: SonarSource/sonarqube-auth-action@v1
+  with:
+    sonar-host-url: https://sonarqube.us
+- uses: SonarSource/sonarqube-scan-action@v8
+```
+
+With `export-env: true`, the action exports `SONAR_HOST_URL=https://sonarqube.us` together with the token, so the scan step needs no other change.
+The organization and the project must be the ones of your SonarQube Cloud US account.
+
+If you set `export-env: false`, pass the values to the scan yourself:
+
+```yaml
+- uses: SonarSource/sonarqube-auth-action@v1
+  id: auth
+  with:
+    sonar-host-url: https://sonarqube.us
+    export-env: false
+- uses: SonarSource/sonarqube-scan-action@v8
+  env:
+    SONAR_TOKEN: ${{ steps.auth.outputs.sonar-token }}
+    SONAR_HOST_URL: ${{ steps.auth.outputs.sonar-host-url }}
+```
+
 ## Prerequisites
 
 - The repository is bound to a project in SonarQube Cloud, through the GitHub integration.
@@ -88,6 +116,7 @@ The organization and project key come back with the token, and are available as 
 ```bash
 npm ci
 npm test
+npm run test:coverage # also writes coverage/lcov.info, read by the SonarQube analysis
 npm run build
 ```
 
