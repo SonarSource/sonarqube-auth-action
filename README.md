@@ -20,10 +20,6 @@ scoped to the project bound to the repository. Run it right before the
 - **Not tied to a person.** There is no personal token to expire, or to revoke when its owner leaves.
 - **One line.** The action exports `SONAR_TOKEN` and `SONAR_HOST_URL`, so the scan action and the SonarScanners need no extra setup.
   The outputs cover every other case.
-- **Traceable.** Each token is issued for one OIDC token of one repository, which makes it possible to trace it back.
-- **Clear errors.** When something is missing (the `id-token: write` permission, trusted scanning not enabled, a repository not bound
-  to a project), the failure says what to fix.
-- **Official.** Maintained by SonarSource, for SonarQube Cloud EU and US.
 
 ### What is SonarQube Cloud?
 
