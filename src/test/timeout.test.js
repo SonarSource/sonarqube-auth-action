@@ -18,6 +18,7 @@
 
 import assert from "node:assert/strict";
 import http from "node:http";
+import net from "node:net";
 import { afterEach, beforeEach, describe, it } from "node:test";
 import { exchangeToken, proxyAwareFetch } from "../main/exchange.js";
 
@@ -48,6 +49,43 @@ function stopServer({ server, sockets }) {
   sockets.forEach((socket) => socket.destroy());
   return new Promise((resolve) => server.close(() => resolve()));
 }
+
+
+function startProxy({ targetPort, stallConnect = false }) {
+  const clientSockets = [];
+  const connects = [];
+  const server = http.createServer((request, response) => {
+    response.writeHead(405);
+    response.end();
+  });
+  server.on("connect", (request, clientSocket, head) => {
+    clientSockets.push(clientSocket);
+    connects.push(request.url);
+    clientSocket.on("error", () => {});
+    clientSocket.on("end", () => {
+      clientSocket.peerClosed = true;
+    });
+    clientSocket.on("close", () => {
+      clientSocket.peerClosed = true;
+    });
+    if (stallConnect) {
+      return;
+    }
+    const upstream = net.connect(targetPort, "127.0.0.1", () => {
+      clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+      upstream.write(head);
+      upstream.pipe(clientSocket);
+      clientSocket.pipe(upstream);
+    });
+    upstream.on("error", () => clientSocket.destroy());
+    clientSocket.on("close", () => upstream.destroy());
+  });
+  return new Promise((resolve) =>
+    server.listen(0, "127.0.0.1", () => resolve({ server, clientSockets, connects, url: `http://127.0.0.1:${server.address().port}` })),
+  );
+}
+
+const UNRESOLVABLE_URL = (port) => `http://sonar-auth-action.invalid:${port}/token`;
 
 const stallAfterHeaders = (request, response) => {
   response.writeHead(200, { "Content-Type": "application/json", "Content-Length": "1000" });
@@ -114,6 +152,61 @@ describe("the default HTTP client deadline", () => {
       /unreachable or unavailable .* after 3 attempts/,
     );
     assert.equal(running.requests.length, 3);
+  });
+
+  it("closes the proxy connection when the proxy never answers the CONNECT request", { timeout: TEST_TIMEOUT_MS }, async () => {
+    running = await startServer(stallAfterHeaders);
+    const stubPort = Number(new URL(running.url).port);
+    const proxy = await startProxy({ targetPort: stubPort, stallConnect: true });
+    process.env.http_proxy = proxy.url;
+
+    try {
+      await assert.rejects(proxyAwareFetch(UNRESOLVABLE_URL(stubPort), REQUEST, SHORT_TIMEOUT_MS), /timed out after 300 ms/);
+      await sleep(SETTLE_MS);
+
+      assert.equal(proxy.connects.length, 1);
+      assert.ok(proxy.clientSockets.every((socket) => socket.peerClosed));
+    } finally {
+      await stopServer({ server: proxy.server, sockets: proxy.clientSockets });
+    }
+  });
+
+  it("closes the proxy tunnel when the response stalls inside it", { timeout: TEST_TIMEOUT_MS }, async () => {
+    running = await startServer(stallAfterHeaders);
+    const proxy = await startProxy({ targetPort: Number(new URL(running.url).port) });
+    process.env.http_proxy = proxy.url;
+
+    try {
+      await assert.rejects(proxyAwareFetch(UNRESOLVABLE_URL(new URL(running.url).port), REQUEST, SHORT_TIMEOUT_MS), /timed out after 300 ms/);
+      await sleep(SETTLE_MS);
+
+      assert.equal(proxy.connects.length, 1);
+      assert.equal(running.requests.length, 1);
+      assert.ok(proxy.clientSockets.every((socket) => socket.destroyed));
+      assert.ok(running.sockets.every((socket) => socket.destroyed));
+    } finally {
+      await stopServer({ server: proxy.server, sockets: proxy.clientSockets });
+    }
+  });
+
+  it("retries through the proxy and reports the service as unavailable when every attempt stalls", { timeout: TEST_TIMEOUT_MS }, async () => {
+    running = await startServer(stallAfterHeaders);
+    const proxy = await startProxy({ targetPort: Number(new URL(running.url).port) });
+    process.env.http_proxy = proxy.url;
+    const request = { endpoint: UNRESOLVABLE_URL(new URL(running.url).port), audience: "https://sonarcloud.io", subjectToken: "jwt" };
+
+    try {
+      await assert.rejects(
+        exchangeToken(request, { fetchFn: (url, options) => proxyAwareFetch(url, options, SHORT_TIMEOUT_MS), sleepFn: async () => {} }),
+        /unreachable or unavailable .* after 3 attempts/,
+      );
+      await sleep(SETTLE_MS);
+
+      assert.equal(proxy.connects.length, 3);
+      assert.ok(proxy.clientSockets.every((socket) => socket.destroyed));
+    } finally {
+      await stopServer({ server: proxy.server, sockets: proxy.clientSockets });
+    }
   });
 
   it("still returns a response that arrives in time", { timeout: TEST_TIMEOUT_MS }, async () => {

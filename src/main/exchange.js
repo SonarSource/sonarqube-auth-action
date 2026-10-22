@@ -16,7 +16,8 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-import { HttpClient } from "@actions/http-client";
+import { getProxyUrl } from "@actions/http-client";
+import { Agent, ProxyAgent, fetch as undiciFetch } from "undici";
 
 const GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
 const SUBJECT_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:id_token";
@@ -34,36 +35,34 @@ class TransientError extends Error {}
 
 const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function readBody(response) {
-  return new Promise((resolve, reject) => {
-    const { message } = response;
-    message.on("error", reject);
-    message.on("close", () => {
-      if (!message.complete) {
-        reject(new Error("Connection closed while reading the response"));
-      }
-    });
-    response.readBody().then(resolve, reject);
-  });
+function createDispatcher(url) {
+  const proxyUrl = getProxyUrl(url);
+  return proxyUrl ? new ProxyAgent(proxyUrl) : new Agent();
+}
+
+function describeFailure(error, timeoutMs) {
+  if (error.name === "TimeoutError" || error.name === "AbortError") {
+    return new Error(`Request timed out after ${timeoutMs} ms`);
+  }
+  return new Error(error.cause?.message ?? error.message);
 }
 
 export async function proxyAwareFetch(url, { headers, body }, timeoutMs = REQUEST_TIMEOUT_MS) {
-  const client = new HttpClient("sonarqube-auth-action", [], { socketTimeout: timeoutMs });
-  let timer;
-  const deadline = new Promise((_, reject) => {
-    timer = setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs} ms`)), timeoutMs);
-  });
-  const exchange = (async () => {
-    const response = await client.post(url, body.toString(), headers);
-    return { status: response.message.statusCode, text: await readBody(response) };
-  })();
-  exchange.catch(() => {});
+  const dispatcher = createDispatcher(url);
   try {
-    const { status, text } = await Promise.race([exchange, deadline]);
-    return { status, text: async () => text };
+    const response = await undiciFetch(url, {
+      method: "POST",
+      headers,
+      body: body.toString(),
+      dispatcher,
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    const text = await response.text();
+    return { status: response.status, text: async () => text };
+  } catch (error) {
+    throw describeFailure(error, timeoutMs);
   } finally {
-    clearTimeout(timer);
-    client.dispose();
+    await dispatcher.destroy();
   }
 }
 
