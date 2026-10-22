@@ -21453,7 +21453,8 @@ function describeFailure(error2, timeoutMs) {
   if (error2.name === "TimeoutError" || error2.name === "AbortError") {
     return new Error(`Request timed out after ${timeoutMs} ms`);
   }
-  return new Error(error2.cause?.message ?? error2.message);
+  const cause = error2.cause;
+  return new Error(cause?.message || cause?.code || error2.message);
 }
 async function proxyAwareFetch(url, { headers, body }, timeoutMs = REQUEST_TIMEOUT_MS) {
   const dispatcher = createDispatcher(url);
