@@ -34,10 +34,37 @@ class TransientError extends Error {}
 
 const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function proxyAwareFetch(url, { headers, body }) {
-  const client = new HttpClient("sonarqube-auth-action", [], { socketTimeout: REQUEST_TIMEOUT_MS });
-  const response = await client.post(url, body.toString(), headers);
-  return { status: response.message.statusCode, text: () => response.readBody() };
+function readBody(response) {
+  return new Promise((resolve, reject) => {
+    const { message } = response;
+    message.on("error", reject);
+    message.on("close", () => {
+      if (!message.complete) {
+        reject(new Error("Connection closed while reading the response"));
+      }
+    });
+    response.readBody().then(resolve, reject);
+  });
+}
+
+export async function proxyAwareFetch(url, { headers, body }, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const client = new HttpClient("sonarqube-auth-action", [], { socketTimeout: timeoutMs });
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs} ms`)), timeoutMs);
+  });
+  const exchange = (async () => {
+    const response = await client.post(url, body.toString(), headers);
+    return { status: response.message.statusCode, text: await readBody(response) };
+  })();
+  exchange.catch(() => {});
+  try {
+    const { status, text } = await Promise.race([exchange, deadline]);
+    return { status, text: async () => text };
+  } finally {
+    clearTimeout(timer);
+    client.dispose();
+  }
 }
 
 function parseJson(text) {
