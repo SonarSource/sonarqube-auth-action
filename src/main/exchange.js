@@ -16,6 +16,8 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
+import { HttpClient } from "@actions/http-client";
+
 const GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
 const SUBJECT_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:id_token";
 const MAX_ATTEMPTS = 3;
@@ -31,6 +33,12 @@ const HTTP_SERVER_ERROR = 500;
 class TransientError extends Error {}
 
 const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function proxyAwareFetch(url, { headers, body }) {
+  const client = new HttpClient("sonarqube-auth-action", [], { socketTimeout: REQUEST_TIMEOUT_MS });
+  const response = await client.post(url, body.toString(), headers);
+  return { status: response.message.statusCode, text: () => response.readBody() };
+}
 
 function parseJson(text) {
   try {
@@ -65,7 +73,6 @@ async function postExchange(fetchFn, { endpoint, audience, subjectToken }) {
       subject_token_type: SUBJECT_TOKEN_TYPE,
       audience,
     }),
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
   });
   return { status: response.status, body: parseJson(await response.text()) };
 }
@@ -98,7 +105,7 @@ async function attemptExchange(fetchFn, request) {
   return toResult(response.status, response.body);
 }
 
-export async function exchangeToken(request, { fetchFn = fetch, sleepFn = defaultSleep, log = () => {} } = {}) {
+export async function exchangeToken(request, { fetchFn = proxyAwareFetch, sleepFn = defaultSleep, log = () => {} } = {}) {
   async function attempt(number) {
     try {
       return await attemptExchange(fetchFn, request);

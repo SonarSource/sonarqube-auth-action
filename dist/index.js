@@ -13611,7 +13611,7 @@ var require_fetch = __commonJS({
     function handleFetchDone(response) {
       finalizeAndReportTiming(response, "fetch");
     }
-    function fetch2(input, init = void 0) {
+    function fetch(input, init = void 0) {
       webidl.argumentLengthCheck(arguments, 1, "globalThis.fetch");
       let p = createDeferredPromise();
       let requestObject;
@@ -14566,7 +14566,7 @@ var require_fetch = __commonJS({
       }
     }
     module.exports = {
-      fetch: fetch2,
+      fetch,
       Fetch,
       fetching,
       finalizeAndReportTiming
@@ -19104,7 +19104,7 @@ var require_undici = __commonJS({
     module.exports.setGlobalDispatcher = setGlobalDispatcher;
     module.exports.getGlobalDispatcher = getGlobalDispatcher;
     var fetchImpl = require_fetch().fetch;
-    module.exports.fetch = async function fetch2(init, options = void 0) {
+    module.exports.fetch = async function fetch(init, options = void 0) {
       try {
         return await fetchImpl(init, options);
       } catch (err) {
@@ -21440,6 +21440,11 @@ var HTTP_SERVER_ERROR = 500;
 var TransientError = class extends Error {
 };
 var defaultSleep = (ms) => new Promise((resolve2) => setTimeout(resolve2, ms));
+async function proxyAwareFetch(url, { headers, body }) {
+  const client = new HttpClient("sonarqube-auth-action", [], { socketTimeout: REQUEST_TIMEOUT_MS });
+  const response = await client.post(url, body.toString(), headers);
+  return { status: response.message.statusCode, text: () => response.readBody() };
+}
 function parseJson(text) {
   try {
     const parsed = JSON.parse(text);
@@ -21470,8 +21475,7 @@ async function postExchange(fetchFn, { endpoint, audience, subjectToken }) {
       subject_token: subjectToken,
       subject_token_type: SUBJECT_TOKEN_TYPE,
       audience
-    }),
-    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+    })
   });
   return { status: response.status, body: parseJson(await response.text()) };
 }
@@ -21501,7 +21505,7 @@ async function attemptExchange(fetchFn, request) {
   }
   return toResult(response.status, response.body);
 }
-async function exchangeToken(request, { fetchFn = fetch, sleepFn = defaultSleep, log = () => {
+async function exchangeToken(request, { fetchFn = proxyAwareFetch, sleepFn = defaultSleep, log = () => {
 } } = {}) {
   async function attempt(number) {
     try {
