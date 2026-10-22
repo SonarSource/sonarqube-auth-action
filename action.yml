@@ -1,0 +1,33 @@
+name: Official SonarQube Auth
+# Warning: changing name would change URL in the marketplace
+description: >
+  Exchange the GitHub Actions OIDC token for a short-lived SonarQube Cloud token scoped to the current repository's project.
+  No stored secret required. Run it right before the SonarQube scan.
+
+branding:
+  icon: log-in
+  color: green
+inputs:
+  sonar-host-url:
+    description: >
+      URL of the SonarQube Cloud instance: https://sonarcloud.io (default) or https://sonarqube.us.
+    required: false
+    default: https://sonarcloud.io
+  export-env:
+    description: >
+      Export the token and the host URL as the SONAR_TOKEN and SONAR_HOST_URL environment variables for the next steps of the job,
+      which is what the SonarQube scan action and the SonarScanner read. Set to false to only use the outputs.
+    required: false
+    default: "true"
+outputs:
+  sonar-token:
+    description: Short-lived, project-scoped SonarQube token. Masked in the logs.
+  organization:
+    description: Key of the SonarQube Cloud organization that owns the project
+  project-key:
+    description: Key of the SonarQube Cloud project bound to the repository
+  sonar-host-url:
+    description: URL of the SonarQube Cloud instance the token was issued by
+runs:
+  using: node24
+  main: dist/index.js
