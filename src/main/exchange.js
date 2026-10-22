@@ -1,0 +1,152 @@
+// SonarQube Auth Action
+// Copyright (C) SonarSource Sàrl
+// mailto:info AT sonarsource DOT com
+//
+// This program is free software; you can redistribute it and/or
+// modify it under the terms of the GNU Lesser General Public
+// License as published by the Free Software Foundation; either
+// version 3 of the License, or (at your option) any later version.
+//
+// This program is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+// Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program; if not, write to the Free Software Foundation,
+// Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+import { HttpClient } from "@actions/http-client";
+
+const GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
+const SUBJECT_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:id_token";
+const MAX_ATTEMPTS = 3;
+const RETRY_DELAY_MS = 1000;
+const REQUEST_TIMEOUT_MS = 30000;
+
+const HTTP_OK = 200;
+const HTTP_UNAUTHORIZED = 401;
+const HTTP_FORBIDDEN = 403;
+const HTTP_NOT_FOUND = 404;
+const HTTP_SERVER_ERROR = 500;
+
+class TransientError extends Error {}
+
+const defaultSleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function readBody(response) {
+  return new Promise((resolve, reject) => {
+    const { message } = response;
+    message.on("error", reject);
+    message.on("close", () => {
+      if (!message.complete) {
+        reject(new Error("Connection closed while reading the response"));
+      }
+    });
+    response.readBody().then(resolve, reject);
+  });
+}
+
+export async function proxyAwareFetch(url, { headers, body }, timeoutMs = REQUEST_TIMEOUT_MS) {
+  const client = new HttpClient("sonarqube-auth-action", [], { socketTimeout: timeoutMs });
+  let timer;
+  const deadline = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`Request timed out after ${timeoutMs} ms`)), timeoutMs);
+  });
+  const exchange = (async () => {
+    const response = await client.post(url, body.toString(), headers);
+    return { status: response.message.statusCode, text: await readBody(response) };
+  })();
+  exchange.catch(() => {});
+  try {
+    const { status, text } = await Promise.race([exchange, deadline]);
+    return { status, text: async () => text };
+  } finally {
+    clearTimeout(timer);
+    client.dispose();
+  }
+}
+
+function parseJson(text) {
+  try {
+    const parsed = JSON.parse(text);
+    return parsed !== null && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function describeRejection(status, body) {
+  const detail = body.error_description || body.error || "no details provided";
+  switch (status) {
+    case HTTP_UNAUTHORIZED:
+      return `SonarQube Cloud rejected the GitHub OIDC token: ${detail}`;
+    case HTTP_FORBIDDEN:
+      return `Access denied: ${detail}. An administrator of the SonarQube Cloud organization must enable trusted scanning for GitHub Actions in the organization settings.`;
+    case HTTP_NOT_FOUND:
+      return `This repository is not bound to a SonarQube Cloud project (${detail}). Bind it to a project through the GitHub integration of SonarQube Cloud, then run the job again.`;
+    default:
+      return `The token exchange was rejected with HTTP ${status}: ${detail}`;
+  }
+}
+
+async function postExchange(fetchFn, { endpoint, audience, subjectToken }) {
+  const response = await fetchFn(endpoint, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: GRANT_TYPE,
+      subject_token: subjectToken,
+      subject_token_type: SUBJECT_TOKEN_TYPE,
+      audience,
+    }),
+  });
+  return { status: response.status, body: parseJson(await response.text()) };
+}
+
+function toResult(status, body) {
+  if (status >= HTTP_SERVER_ERROR) {
+    throw new TransientError(`HTTP ${status}`);
+  }
+  if (status !== HTTP_OK) {
+    throw new Error(describeRejection(status, body));
+  }
+  if (!body.access_token) {
+    throw new Error("The token exchange succeeded but the response contains no access_token.");
+  }
+  return {
+    accessToken: body.access_token,
+    organization: body.organization ?? "",
+    projectKey: body.project_key ?? "",
+    expiresIn: Number.isFinite(body.expires_in) ? body.expires_in : undefined,
+  };
+}
+
+async function attemptExchange(fetchFn, request) {
+  let response;
+  try {
+    response = await postExchange(fetchFn, request);
+  } catch (error) {
+    throw new TransientError(error.message);
+  }
+  return toResult(response.status, response.body);
+}
+
+export async function exchangeToken(request, { fetchFn = proxyAwareFetch, sleepFn = defaultSleep, log = () => {} } = {}) {
+  async function attempt(number) {
+    try {
+      return await attemptExchange(fetchFn, request);
+    } catch (error) {
+      if (!(error instanceof TransientError)) {
+        throw error;
+      }
+      if (number >= MAX_ATTEMPTS) {
+        throw new Error(`SonarQube Cloud is unreachable or unavailable (${error.message}) after ${MAX_ATTEMPTS} attempts.`);
+      }
+      log(`Token exchange attempt ${number} of ${MAX_ATTEMPTS} failed (${error.message}), retrying.`);
+      await sleepFn(RETRY_DELAY_MS * number);
+      return attempt(number + 1);
+    }
+  }
+  return attempt(1);
+}
