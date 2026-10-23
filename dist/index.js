@@ -21583,7 +21583,11 @@ function parseBaseUrl(inputName, rawUrl) {
   if (url.protocol !== "https:" && url.protocol !== "http:") {
     throw new Error(`Invalid ${inputName} '${rawUrl}': only http and https URLs are supported.`);
   }
-  return `${url.origin}${url.pathname}`.replace(/\/+$/, "");
+  let baseUrl = `${url.origin}${url.pathname}`;
+  while (baseUrl.endsWith("/")) {
+    baseUrl = baseUrl.slice(0, -1);
+  }
+  return baseUrl;
 }
 function resolveCustomUrls(rawWebBaseUrl, rawApiBaseUrl) {
   if (!rawWebBaseUrl || !rawApiBaseUrl) {
