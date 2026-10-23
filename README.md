@@ -71,7 +71,9 @@ jobs:
             -Dsonar.projectKey=${{ steps.auth.outputs.project-key }}
 ```
 
-You do not need to create a `SONAR_TOKEN` secret. The action generates an ephemeral token and exports it as the `SONAR_TOKEN` environment variable, along with `SONAR_HOST_URL`, for the later steps of the job.
+You do not need to create a `SONAR_TOKEN` secret.
+The action generates an ephemeral token and exports it as the `SONAR_TOKEN` environment variable,
+along with `SONAR_HOST_URL`, for the later steps of the job.
 
 The organization and project key come back with the token, as the `organization` and `project-key` outputs.
 The scanner needs both. Pass them with `args`.
