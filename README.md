@@ -9,7 +9,7 @@
 
 ## A GitHub Action for SonarQube Cloud
 
-If you analyze code with [SonarQube Cloud](https://www.sonarsource.com/products/sonarcloud/) in GitHub Actions,
+If you analyze code with [SonarQube Cloud](https://www.sonarsource.com/products/sonarqube/cloud/) in GitHub Actions,
 this action lets your workflow scan without any stored secret.
 It exchanges the ephemeral GitHub Actions OIDC token of the job for a short-lived SonarQube Cloud token,
 scoped to the project bound to the repository. Run it right before the
@@ -26,7 +26,7 @@ scoped to the project bound to the repository. Run it right before the
 
 ### What is SonarQube Cloud?
 
-[SonarQube Cloud](https://www.sonarsource.com/products/sonarcloud/) is a static analysis solution
+[SonarQube Cloud](https://www.sonarsource.com/products/sonarqube/cloud/) is a static analysis solution
 that continuously checks code quality and security and helps you fix the issues it finds.
 The platform supports 30+ languages, frameworks, and IaC platforms, including Java, JavaScript,
 TypeScript, C#, Python, C, C++, and [many more languages](https://www.sonarsource.com/knowledge/languages/).
@@ -177,7 +177,7 @@ npm run build
 ## Support and community
 
 To request a feature or report a bug, post in the
-[GitHub Actions topic of the SonarSource Community forum](https://community.sonarsource.com/tags/c/help/sc/9/github-actions).
+[GitHub Actions topic of the SonarSource Community forum](https://community.sonarsource.com/tags/c/sc/9/github-actions/200).
 
 ## License
 
