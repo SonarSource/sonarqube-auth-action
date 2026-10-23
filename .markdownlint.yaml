@@ -3,6 +3,7 @@ default: true
 
 MD033: # Inline HTML, for the logo that follows the color scheme
   allowed_elements:
+    - p
     - picture
     - source
     - img
@@ -14,3 +15,5 @@ MD013:
 MD031: # Fenced code blocks should be surrounded by blank lines
   # Disable for list_items to create a tight list containing a code fence
   list_items: false
+
+MD041: false # Approved brand header and build badge precede the H1.

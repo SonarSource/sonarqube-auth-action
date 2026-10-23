@@ -1,21 +1,40 @@
-# Authenticate your SonarQube scan without a token [![Build status](https://github.com/SonarSource/sonarqube-auth-action/actions/workflows/build.yml/badge.svg)](https://github.com/SonarSource/sonarqube-auth-action/actions/workflows/build.yml)
+<!-- Sonar Marketing hosts these approved brand assets on its Kentico Kontent CDN (assets-eu-01.kc-usercontent.com).
+Shared URLs are intentional; consult Marketing before replacing them. -->
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://assets-eu-01.kc-usercontent.com/ef593040-b591-0198-9506-ed88b30bc023/a23fc7ba-23f0-489a-829d-ed88c0748521/Sonar_Logo_Dark%20Backgrounds.svg">
+    <img
+      src="https://assets-eu-01.kc-usercontent.com/ef593040-b591-0198-9506-ed88b30bc023/82c13eba-d95c-4bb8-8007-7ce77c14e043/Sonar_Logo_Light%20Backgrounds.svg"
+      alt="Sonar logo" width="400">
+  </picture>
+</p>
 
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="./images/SQ_Logo_Server_Cloud_Dark_Backgrounds.png">
-  <img
-    alt="SonarQube Server and SonarQube Cloud logo: a blue radiating-waves icon beside the SonarQube wordmark, with server | cloud below it"
-    src="./images/SQ_Logo_Server_Cloud_Light_Backgrounds.png">
-</picture>
+[![Build status](https://github.com/SonarSource/sonarqube-auth-action/actions/workflows/build.yml/badge.svg)](https://github.com/SonarSource/sonarqube-auth-action/actions/workflows/build.yml)
 
-## A GitHub Action for SonarQube Cloud
+<!-- sonar-marketing:start -->
+<!-- Marketing maintains this section. For wording changes, consult the relevant Product Marketing Manager (PMM).
+Repository CODEOWNERS review accuracy and merge changes. -->
+
+# Authenticate your SonarQube Cloud scan without a stored token
 
 If you analyze code with [SonarQube Cloud](https://www.sonarsource.com/products/sonarqube/cloud/) in GitHub Actions,
 this action lets your workflow scan without any stored secret.
-It exchanges the ephemeral GitHub Actions OIDC token of the job for a short-lived SonarQube Cloud token,
+It exchanges the ephemeral GitHub Actions OpenID Connect (OIDC) token of the job for a short-lived SonarQube Cloud token,
 scoped to the project bound to the repository. Run it right before the
 [SonarQube scan action](https://github.com/SonarSource/sonarqube-scan-action).
 
-### Why use it?
+## What is SonarQube Cloud?
+
+[SonarQube Cloud](https://www.sonarsource.com/products/sonarqube/cloud/) is a static analysis solution
+that continuously checks code quality and security and helps you fix the issues it finds.
+The platform supports 30+ languages, frameworks, and IaC platforms, including Java, JavaScript,
+TypeScript, C#, Python, C, C++, and [many more languages](https://www.sonarsource.com/knowledge/languages/).
+
+Continue to the [quick start](#quick-start) to configure authentication for your workflow.
+
+<!-- sonar-marketing:end -->
+
+## Why use it?
 
 - **No secret to store.** No `SONAR_TOKEN` to create, copy into GitHub secrets, rotate, or leak.
 - **Short-lived.** The token lasts 30 minutes. A token exposed in a log or a cache is of no use soon after.
@@ -23,13 +42,6 @@ scoped to the project bound to the repository. Run it right before the
 - **Not tied to a person.** No personal token expires, and none needs revoking when its owner leaves.
 - **One line.** The action exports `SONAR_TOKEN` and `SONAR_HOST_URL`. The scan action and the SonarScanners need no extra setup.
   The outputs cover every other case.
-
-### What is SonarQube Cloud?
-
-[SonarQube Cloud](https://www.sonarsource.com/products/sonarqube/cloud/) is a static analysis solution
-that continuously checks code quality and security and helps you fix the issues it finds.
-The platform supports 30+ languages, frameworks, and IaC platforms, including Java, JavaScript,
-TypeScript, C#, Python, C, C++, and [many more languages](https://www.sonarsource.com/knowledge/languages/).
 
 ## Quick start
 
