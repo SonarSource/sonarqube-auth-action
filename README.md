@@ -18,11 +18,11 @@ scoped to the project bound to the repository. Run it right before the
 ### Why use it?
 
 - **No secret to store.** No `SONAR_TOKEN` to create, copy into GitHub secrets, rotate, or leak.
-- **Short-lived.** The token lasts 30 minutes. A token exposed in a log or a cache is of no use soon after.
-- **Least privilege.** The token can only analyze the project bound to the repository, not the whole organization.
 - **Not tied to a person.** No personal token expires, and none needs revoking when its owner leaves.
-- **One line.** The action exports `SONAR_TOKEN` and `SONAR_HOST_URL`. The scan action and the SonarScanners need no extra setup.
-  The outputs cover every other case.
+- **Short-lived.** The authorization lasts 30 minutes. An ephemeral token exposed in a log or a cache is of no use soon after.
+- **Least privilege.** This token can only analyze the project bound to the repository, not the whole organization.
+- **One line.** The action exports the ephemeral token as `SONAR_TOKEN`, along with `SONAR_HOST_URL`.
+  The scan action and the SonarScanners need no extra setup. The outputs cover every other case.
 
 ### What is SonarQube Cloud?
 
@@ -71,7 +71,7 @@ jobs:
             -Dsonar.projectKey=${{ steps.auth.outputs.project-key }}
 ```
 
-You do not configure a `SONAR_TOKEN`: the action exports `SONAR_TOKEN` and `SONAR_HOST_URL` for the later steps of the job.
+You do not need to create a `SONAR_TOKEN` secret. The action generates an ephemeral token and exports it as the `SONAR_TOKEN` environment variable, along with `SONAR_HOST_URL`, for the later steps of the job.
 
 The organization and project key come back with the token, as the `organization` and `project-key` outputs.
 The scanner needs both. Pass them with `args`.
@@ -105,7 +105,7 @@ Set `sonar-host-url` to target the US instance. The default is the EU instance, 
       -Dsonar.projectKey=${{ steps.auth.outputs.project-key }}
 ```
 
-With `export-env: true`, the action exports `SONAR_HOST_URL=https://sonarqube.us` together with the token.
+With `export-env: true`, the action exports `SONAR_HOST_URL=https://sonarqube.us` together with the ephemeral token.
 The scan step needs no other change.
 The organization and the project must be the ones of your SonarQube Cloud US account.
 
@@ -132,20 +132,20 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | Input | Default | Description |
 |---|---|---|
 | `sonar-host-url` | `https://sonarcloud.io` | SonarQube Cloud instance: `https://sonarcloud.io` or `https://sonarqube.us`. |
-| `export-env` | `true` | Export `SONAR_TOKEN` and `SONAR_HOST_URL` to the next steps of the job. |
+| `export-env` | `true` | Export the ephemeral token as `SONAR_TOKEN` and `SONAR_HOST_URL` to the next steps of the job. |
 
 ## Outputs
 
 | Output | Description |
 |---|---|
-| `sonar-token` | The short-lived, project-scoped token. Masked in the logs. |
+| `sonar-token` | The ephemeral, project-scoped token. Masked in the logs. |
 | `organization` | Key of the organization that owns the project. |
 | `project-key` | Key of the project bound to the repository. |
 | `sonar-host-url` | The SonarQube Cloud instance that issued the token. |
 
 ## Security
 
-- The token lasts 30 minutes. Run the action right before the scan, not at the start of a long job.
+- The ephemeral token lasts 30 minutes. Run the action right before the scan, not at the start of a long job.
 - With `export-env: true`, every later step of the job can read `SONAR_TOKEN`, including third-party actions.
   If that matters to you, set `export-env: false` and pass the `sonar-token` output only to the steps that need it.
 - Workflows triggered by pull requests from forks do not get the `id-token: write` permission, which makes the action fail there.
