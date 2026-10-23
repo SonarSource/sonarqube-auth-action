@@ -23,18 +23,11 @@ It exchanges the ephemeral GitHub Actions OpenID Connect (OIDC) token of the job
 scoped to the project bound to the repository. Run it right before the
 [SonarQube scan action](https://github.com/SonarSource/sonarqube-scan-action).
 
-## What is SonarQube Cloud?
-
-[SonarQube Cloud](https://www.sonarsource.com/products/sonarqube/cloud/) is a static analysis solution
-that continuously checks code quality and security and helps you fix the issues it finds.
-The platform supports 30+ languages, frameworks, and IaC platforms, including Java, JavaScript,
-TypeScript, C#, Python, C, C++, and [many more languages](https://www.sonarsource.com/knowledge/languages/).
-
 Continue to the [quick start](#quick-start) to configure authentication for your workflow.
 
 <!-- sonar-marketing:end -->
 
-## Why use it?
+## Why use this action?
 
 - **No secret to store.** No `SONAR_TOKEN` to create, copy into GitHub secrets, rotate, or leak.
 - **Short-lived.** The token lasts 30 minutes. A token exposed in a log or a cache is of no use soon after.
