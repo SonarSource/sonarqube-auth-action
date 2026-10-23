@@ -93,9 +93,8 @@ describe("run", () => {
       "sonar-token": "sqco_secret",
       organization: "acme",
       "project-key": "acme_app",
-      "sonar-host-url": "https://sonarcloud.io",
     });
-    assert.deepEqual(state.env, { SONAR_TOKEN: "sqco_secret", SONAR_HOST_URL: "https://sonarcloud.io" });
+    assert.deepEqual(state.env, { SONAR_TOKEN: "sqco_secret" });
     assert.ok(state.secrets.includes("sqco_secret"));
     assert.equal(state.summaryWrites, 1);
   });
@@ -122,15 +121,30 @@ describe("run", () => {
     assert.equal(withoutExpiry.state.failure, undefined);
   });
 
-  it("targets the host given as input", async () => {
-    const { core, state } = fakeCore({ "sonar-host-url": "https://sonarqube.us" });
+  it("targets the region given as input and exports it", async () => {
+    const { core, state } = fakeCore({ "sonar-region": "us" });
     const { fetchFn, calls } = replyingWith(200, SUCCESS_BODY);
 
     await run(core, { fetchFn });
 
     assert.deepEqual(state.idTokenAudiences, ["https://sonarqube.us"]);
     assert.equal(calls[0].url, "https://api.sonarqube.us/authentication/token");
-    assert.equal(state.env.SONAR_HOST_URL, "https://sonarqube.us");
+    assert.deepEqual(state.env, { SONAR_TOKEN: "sqco_secret", SONAR_REGION: "us" });
+  });
+
+  it("targets the custom URLs given as input and exports them", async () => {
+    const { core, state } = fakeCore({ "sonar-web-base-url": "https://dev5.sc-dev5.io", "sonar-api-base-url": "https://api.sc-dev5.io" });
+    const { fetchFn, calls } = replyingWith(200, SUCCESS_BODY);
+
+    await run(core, { fetchFn });
+
+    assert.deepEqual(state.idTokenAudiences, ["https://dev5.sc-dev5.io"]);
+    assert.equal(calls[0].url, "https://api.sc-dev5.io/authentication/token");
+    assert.deepEqual(state.env, {
+      SONAR_TOKEN: "sqco_secret",
+      SONAR_SCANNER_SONARCLOUD_URL: "https://dev5.sc-dev5.io",
+      SONAR_SCANNER_API_BASE_URL: "https://api.sc-dev5.io",
+    });
   });
 
   it("does not export the environment when export-env is false", async () => {
@@ -157,13 +171,13 @@ describe("run", () => {
     assert.deepEqual(state.env, {});
   });
 
-  it("fails on an unsupported host without contacting anything", async () => {
-    const { core, state } = fakeCore({ "sonar-host-url": "https://sonar.example.com" });
+  it("fails on an unsupported region without contacting anything", async () => {
+    const { core, state } = fakeCore({ "sonar-region": "mars" });
     const { fetchFn, calls } = replyingWith(200, SUCCESS_BODY);
 
     await run(core, { fetchFn });
 
-    assert.match(state.failure, /Unsupported sonar-host-url/);
+    assert.match(state.failure, /Unsupported sonar-region/);
     assert.equal(calls.length, 0);
     assert.deepEqual(state.idTokenAudiences, []);
   });
