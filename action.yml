@@ -35,6 +35,10 @@ outputs:
     description: Key of the SonarQube Cloud organization that owns the project
   project-key:
     description: Key of the SonarQube Cloud project bound to the repository
+  sonar-region:
+    description: >
+      Value for the SONAR_REGION environment variable or the sonar.region property of the scanner:
+      us for the us region, empty for the eu region (the scanner default) and for sonar-api-base-url.
 runs:
   using: node24
   main: dist/index.js

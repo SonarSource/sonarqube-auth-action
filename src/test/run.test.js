@@ -93,6 +93,7 @@ describe("run", () => {
       "sonar-token": "sqco_secret",
       organization: "acme",
       "project-key": "acme_app",
+      "sonar-region": "",
     });
     assert.deepEqual(state.env, { SONAR_TOKEN: "sqco_secret" });
     assert.ok(state.secrets.includes("sqco_secret"));
@@ -130,6 +131,7 @@ describe("run", () => {
     assert.deepEqual(state.idTokenAudiences, ["https://sonarqube.us"]);
     assert.equal(calls[0].url, "https://api.sonarqube.us/authentication/token");
     assert.deepEqual(state.env, { SONAR_TOKEN: "sqco_secret", SONAR_REGION: "us" });
+    assert.equal(state.outputs["sonar-region"], "us");
   });
 
   it("targets the custom API URL and audience given as input and exports only the token", async () => {
@@ -141,6 +143,7 @@ describe("run", () => {
     assert.deepEqual(state.idTokenAudiences, ["https://audience.test.example"]);
     assert.equal(calls[0].url, "https://api.test.example/authentication/token");
     assert.deepEqual(state.env, { SONAR_TOKEN: "sqco_secret" });
+    assert.equal(state.outputs["sonar-region"], "");
   });
 
   it("does not export the environment when export-env is false", async () => {

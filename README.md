@@ -120,7 +120,7 @@ If you set `export-env: false`, pass the values to the scan yourself:
 - uses: SonarSource/sonarqube-scan-action@v8
   env:
     SONAR_TOKEN: ${{ steps.auth.outputs.sonar-token }}
-    SONAR_REGION: us
+    SONAR_REGION: ${{ steps.auth.outputs.sonar-region }}
   with:
     args: >
       -Dsonar.organization=${{ steps.auth.outputs.organization }}
@@ -143,6 +143,7 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | `sonar-token` | The short-lived, project-scoped token. Masked in the logs. |
 | `organization` | Key of the organization that owns the project. |
 | `project-key` | Key of the project bound to the repository. |
+| `sonar-region` | Region to pass to the scanner as `SONAR_REGION`: `us` for the `us` region, empty for the `eu` region, which is the scanner default. |
 
 ## Security
 

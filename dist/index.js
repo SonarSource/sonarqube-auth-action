@@ -21623,6 +21623,7 @@ function publishResult(core, target, result, exportEnv) {
   core.setOutput("sonar-token", result.accessToken);
   core.setOutput("organization", result.organization);
   core.setOutput("project-key", result.projectKey);
+  core.setOutput("sonar-region", target.scannerEnv.SONAR_REGION ?? "");
   if (exportEnv) {
     core.exportVariable("SONAR_TOKEN", result.accessToken);
     for (const [name, value] of Object.entries(target.scannerEnv)) {
