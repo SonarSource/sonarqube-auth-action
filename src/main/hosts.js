@@ -16,29 +16,61 @@
 // along with this program; if not, write to the Free Software Foundation,
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
-export const DEFAULT_HOST_URL = "https://sonarcloud.io";
+export const DEFAULT_REGION = "eu";
 
-export const SUPPORTED_HOSTNAMES = ["sonarcloud.io", "sonarqube.us"];
+const REGIONS = {
+  eu: { apiUrl: "https://api.sonarcloud.io", audience: "https://sonarcloud.io", scannerEnv: {} },
+  us: { apiUrl: "https://api.sonarqube.us", audience: "https://sonarqube.us", scannerEnv: { SONAR_REGION: "us" } },
+};
 
-export function resolveTarget(rawHostUrl) {
+export const SUPPORTED_REGIONS = Object.keys(REGIONS);
+
+const TOKEN_PATH = "/authentication/token";
+
+function toTarget(apiUrl, audience, scannerEnv) {
+  return { apiUrl, audience, endpoint: apiUrl + TOKEN_PATH, scannerEnv };
+}
+
+function resolveRegion(rawRegion) {
+  const region = rawRegion.trim().toLowerCase() || DEFAULT_REGION;
+  if (!Object.hasOwn(REGIONS, region)) {
+    throw new Error(`Unsupported sonar-region '${rawRegion}'. Supported regions: ${SUPPORTED_REGIONS.join(", ")}.`);
+  }
+  const { apiUrl, audience, scannerEnv } = REGIONS[region];
+  return toTarget(apiUrl, audience, scannerEnv);
+}
+
+function parseBaseUrl(inputName, rawUrl) {
   let url;
   try {
-    url = new URL(rawHostUrl.trim());
+    url = new URL(rawUrl);
   } catch {
-    throw new Error(`Invalid sonar-host-url '${rawHostUrl}': expected a URL such as ${DEFAULT_HOST_URL}.`);
+    throw new Error(`Invalid ${inputName} '${rawUrl}': expected an http or https URL.`);
   }
-
-  const hostname = url.hostname.toLowerCase();
-  if (url.protocol !== "https:" || !SUPPORTED_HOSTNAMES.includes(hostname)) {
-    const supported = SUPPORTED_HOSTNAMES.map((host) => "https://" + host).join(", ");
-    throw new Error(
-      `Unsupported sonar-host-url '${rawHostUrl}'. Trusted scanning with GitHub Actions is available on: ${supported}.`,
-    );
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error(`Invalid ${inputName} '${rawUrl}': only http and https URLs are supported.`);
   }
+  let baseUrl = `${url.origin}${url.pathname}`;
+  while (baseUrl.endsWith("/")) {
+    baseUrl = baseUrl.slice(0, -1);
+  }
+  return baseUrl;
+}
 
-  return {
-    hostUrl: `https://${hostname}`,
-    audience: `https://${hostname}`,
-    endpoint: `https://api.${hostname}/authentication/token`,
-  };
+export function resolveTarget({ region = "", apiBaseUrl = "", audience = "" } = {}) {
+  const customApiUrl = apiBaseUrl.trim();
+  const customAudience = audience.trim();
+  if (!customApiUrl) {
+    if (customAudience) {
+      throw new Error("oidc-audience requires sonar-api-base-url.");
+    }
+    return resolveRegion(region);
+  }
+  if (region.trim()) {
+    throw new Error("sonar-region cannot be combined with sonar-api-base-url.");
+  }
+  if (!customAudience) {
+    throw new Error("sonar-api-base-url requires oidc-audience.");
+  }
+  return toTarget(parseBaseUrl("sonar-api-base-url", customApiUrl), customAudience, {});
 }
