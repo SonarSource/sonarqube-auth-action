@@ -20,10 +20,13 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { resolveTarget } from "../main/hosts.js";
 
+const API_BASE_URL = "https://api.test.example";
+const AUDIENCE = "https://audience.test.example";
+
 describe("resolveTarget", () => {
   it("resolves no input to the EU instance without scanner environment", () => {
     assert.deepEqual(resolveTarget(), {
-      webUrl: "https://sonarcloud.io",
+      apiUrl: "https://api.sonarcloud.io",
       audience: "https://sonarcloud.io",
       endpoint: "https://api.sonarcloud.io/authentication/token",
       scannerEnv: {},
@@ -36,7 +39,7 @@ describe("resolveTarget", () => {
 
   it("resolves the US region and sets SONAR_REGION", () => {
     assert.deepEqual(resolveTarget({ region: "us" }), {
-      webUrl: "https://sonarqube.us",
+      apiUrl: "https://api.sonarqube.us",
       audience: "https://sonarqube.us",
       endpoint: "https://api.sonarqube.us/authentication/token",
       scannerEnv: { SONAR_REGION: "us" },
@@ -44,7 +47,7 @@ describe("resolveTarget", () => {
   });
 
   it("ignores the case and surrounding whitespace of the region", () => {
-    assert.equal(resolveTarget({ region: "  US " }).webUrl, "https://sonarqube.us");
+    assert.equal(resolveTarget({ region: "  US " }).apiUrl, "https://api.sonarqube.us");
   });
 
   it("rejects an unsupported region and lists the supported ones", () => {
@@ -55,47 +58,43 @@ describe("resolveTarget", () => {
     assert.throws(() => resolveTarget({ region: "constructor" }), /Unsupported sonar-region/);
   });
 
-  it("resolves custom URLs whose API host does not derive from the web host", () => {
-    assert.deepEqual(resolveTarget({ webBaseUrl: "https://dev5.sc-dev5.io/", apiBaseUrl: "https://api.sc-dev5.io/" }), {
-      webUrl: "https://dev5.sc-dev5.io",
-      audience: "https://dev5.sc-dev5.io",
-      endpoint: "https://api.sc-dev5.io/authentication/token",
-      scannerEnv: {
-        SONAR_SCANNER_SONARCLOUD_URL: "https://dev5.sc-dev5.io",
-        SONAR_SCANNER_API_BASE_URL: "https://api.sc-dev5.io",
-      },
+  it("uses the custom audience as is, as it does not derive from the API URL, and exports nothing to the scanner", () => {
+    assert.deepEqual(resolveTarget({ apiBaseUrl: `${API_BASE_URL}/`, audience: ` ${AUDIENCE} ` }), {
+      apiUrl: API_BASE_URL,
+      audience: AUDIENCE,
+      endpoint: `${API_BASE_URL}/authentication/token`,
+      scannerEnv: {},
     });
   });
 
-  it("keeps the path of custom URLs and accepts http", () => {
-    const target = resolveTarget({ webBaseUrl: "http://localhost:9000", apiBaseUrl: " http://localhost:9000/api// " });
-    assert.equal(target.webUrl, "http://localhost:9000");
+  it("keeps the path of the custom API URL and accepts http", () => {
+    const target = resolveTarget({ apiBaseUrl: " http://localhost:9000/api// ", audience: AUDIENCE });
     assert.equal(target.endpoint, "http://localhost:9000/api/authentication/token");
   });
 
-  it("rejects a single custom URL", () => {
-    assert.throws(() => resolveTarget({ webBaseUrl: "https://dev5.sc-dev5.io" }), /must be set together/);
-    assert.throws(() => resolveTarget({ apiBaseUrl: "https://api.sc-dev5.io" }), /must be set together/);
+  it("rejects a custom API URL without an audience", () => {
+    assert.throws(() => resolveTarget({ apiBaseUrl: API_BASE_URL }), /sonar-api-base-url requires oidc-audience\./);
   });
 
-  it("rejects custom URLs combined with a region", () => {
+  it("rejects an audience without a custom API URL", () => {
+    assert.throws(() => resolveTarget({ audience: AUDIENCE }), /oidc-audience requires sonar-api-base-url\./);
+  });
+
+  it("rejects a custom API URL combined with a region", () => {
     assert.throws(
-      () => resolveTarget({ region: "us", webBaseUrl: "https://dev5.sc-dev5.io", apiBaseUrl: "https://api.sc-dev5.io" }),
-      /sonar-region cannot be combined with sonar-web-base-url and sonar-api-base-url/,
+      () => resolveTarget({ region: "us", apiBaseUrl: API_BASE_URL, audience: AUDIENCE }),
+      /sonar-region cannot be combined with sonar-api-base-url\./,
     );
   });
 
-  it("rejects a custom URL with an unsupported scheme", () => {
+  it("rejects a custom API URL with an unsupported scheme", () => {
     assert.throws(
-      () => resolveTarget({ webBaseUrl: "ftp://dev5.sc-dev5.io", apiBaseUrl: "https://api.sc-dev5.io" }),
-      /Invalid sonar-web-base-url 'ftp:\/\/dev5\.sc-dev5\.io': only http and https URLs are supported\./,
+      () => resolveTarget({ apiBaseUrl: "ftp://api.test.example", audience: AUDIENCE }),
+      /Invalid sonar-api-base-url 'ftp:\/\/api\.test\.example': only http and https URLs are supported\./,
     );
   });
 
-  it("rejects a custom URL that is not a URL", () => {
-    assert.throws(
-      () => resolveTarget({ webBaseUrl: "https://dev5.sc-dev5.io", apiBaseUrl: "api" }),
-      /Invalid sonar-api-base-url 'api'/,
-    );
+  it("rejects a custom API URL that is not a URL", () => {
+    assert.throws(() => resolveTarget({ apiBaseUrl: "api", audience: AUDIENCE }), /Invalid sonar-api-base-url 'api'/);
   });
 });

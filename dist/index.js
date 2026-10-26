@@ -21557,26 +21557,26 @@ async function exchangeToken(request, { fetchFn = proxyAwareFetch, sleepFn = def
 // src/main/hosts.js
 var DEFAULT_REGION = "eu";
 var REGIONS = {
-  eu: { webUrl: "https://sonarcloud.io", apiUrl: "https://api.sonarcloud.io", scannerEnv: {} },
-  us: { webUrl: "https://sonarqube.us", apiUrl: "https://api.sonarqube.us", scannerEnv: { SONAR_REGION: "us" } }
+  eu: { apiUrl: "https://api.sonarcloud.io", audience: "https://sonarcloud.io", scannerEnv: {} },
+  us: { apiUrl: "https://api.sonarqube.us", audience: "https://sonarqube.us", scannerEnv: { SONAR_REGION: "us" } }
 };
 var SUPPORTED_REGIONS = Object.keys(REGIONS);
 var TOKEN_PATH = "/authentication/token";
-function toTarget(webUrl, apiUrl, scannerEnv) {
-  return { webUrl, audience: webUrl, endpoint: apiUrl + TOKEN_PATH, scannerEnv };
+function toTarget(apiUrl, audience, scannerEnv) {
+  return { apiUrl, audience, endpoint: apiUrl + TOKEN_PATH, scannerEnv };
 }
 function resolveRegion(rawRegion) {
   const region = rawRegion.trim().toLowerCase() || DEFAULT_REGION;
   if (!Object.hasOwn(REGIONS, region)) {
     throw new Error(`Unsupported sonar-region '${rawRegion}'. Supported regions: ${SUPPORTED_REGIONS.join(", ")}.`);
   }
-  const { webUrl, apiUrl, scannerEnv } = REGIONS[region];
-  return toTarget(webUrl, apiUrl, scannerEnv);
+  const { apiUrl, audience, scannerEnv } = REGIONS[region];
+  return toTarget(apiUrl, audience, scannerEnv);
 }
 function parseBaseUrl(inputName, rawUrl) {
   let url;
   try {
-    url = new URL(rawUrl.trim());
+    url = new URL(rawUrl);
   } catch {
     throw new Error(`Invalid ${inputName} '${rawUrl}': expected an http or https URL.`);
   }
@@ -21589,23 +21589,22 @@ function parseBaseUrl(inputName, rawUrl) {
   }
   return baseUrl;
 }
-function resolveCustomUrls(rawWebBaseUrl, rawApiBaseUrl) {
-  if (!rawWebBaseUrl || !rawApiBaseUrl) {
-    throw new Error("sonar-web-base-url and sonar-api-base-url must be set together.");
-  }
-  const webUrl = parseBaseUrl("sonar-web-base-url", rawWebBaseUrl);
-  const apiUrl = parseBaseUrl("sonar-api-base-url", rawApiBaseUrl);
-  return toTarget(webUrl, apiUrl, { SONAR_SCANNER_SONARCLOUD_URL: webUrl, SONAR_SCANNER_API_BASE_URL: apiUrl });
-}
-function resolveTarget({ region = "", webBaseUrl = "", apiBaseUrl = "" } = {}) {
-  const hasCustomUrls = Boolean(webBaseUrl.trim() || apiBaseUrl.trim());
-  if (!hasCustomUrls) {
+function resolveTarget({ region = "", apiBaseUrl = "", audience = "" } = {}) {
+  const customApiUrl = apiBaseUrl.trim();
+  const customAudience = audience.trim();
+  if (!customApiUrl) {
+    if (customAudience) {
+      throw new Error("oidc-audience requires sonar-api-base-url.");
+    }
     return resolveRegion(region);
   }
   if (region.trim()) {
-    throw new Error("sonar-region cannot be combined with sonar-web-base-url and sonar-api-base-url.");
+    throw new Error("sonar-region cannot be combined with sonar-api-base-url.");
   }
-  return resolveCustomUrls(webBaseUrl.trim(), apiBaseUrl.trim());
+  if (!customAudience) {
+    throw new Error("sonar-api-base-url requires oidc-audience.");
+  }
+  return toTarget(parseBaseUrl("sonar-api-base-url", customApiUrl), customAudience, {});
 }
 
 // src/main/run.js
@@ -21635,8 +21634,8 @@ async function writeSummary(core, target, result) {
   const header = (data) => ({ data, header: true });
   try {
     await core.summary.addHeading("SonarQube trusted scan", SUMMARY_HEADING_LEVEL).addTable([
-      [header("Host"), header("Organization"), header("Project")],
-      [target.webUrl, result.organization, result.projectKey]
+      [header("API"), header("Organization"), header("Project")],
+      [target.apiUrl, result.organization, result.projectKey]
     ]).write();
   } catch (error2) {
     core.debug(`Job summary not written: ${error2.message}`);
@@ -21652,8 +21651,8 @@ async function run(core, { fetchFn, sleepFn } = {}) {
   try {
     const target = resolveTarget({
       region: core.getInput("sonar-region"),
-      webBaseUrl: core.getInput("sonar-web-base-url"),
-      apiBaseUrl: core.getInput("sonar-api-base-url")
+      apiBaseUrl: core.getInput("sonar-api-base-url"),
+      audience: core.getInput("oidc-audience")
     });
     const exportEnv = core.getBooleanInput("export-env");
     const subjectToken = await requestOidcToken(core, target.audience);

@@ -51,8 +51,8 @@ async function writeSummary(core, target, result) {
     await core.summary
       .addHeading("SonarQube trusted scan", SUMMARY_HEADING_LEVEL)
       .addTable([
-        [header("Host"), header("Organization"), header("Project")],
-        [target.webUrl, result.organization, result.projectKey],
+        [header("API"), header("Organization"), header("Project")],
+        [target.apiUrl, result.organization, result.projectKey],
       ])
       .write();
   } catch (error) {
@@ -71,8 +71,8 @@ export async function run(core, { fetchFn, sleepFn } = {}) {
   try {
     const target = resolveTarget({
       region: core.getInput("sonar-region"),
-      webBaseUrl: core.getInput("sonar-web-base-url"),
       apiBaseUrl: core.getInput("sonar-api-base-url"),
+      audience: core.getInput("oidc-audience"),
     });
     const exportEnv = core.getBooleanInput("export-env");
 

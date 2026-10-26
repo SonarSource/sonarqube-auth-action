@@ -132,19 +132,15 @@ describe("run", () => {
     assert.deepEqual(state.env, { SONAR_TOKEN: "sqco_secret", SONAR_REGION: "us" });
   });
 
-  it("targets the custom URLs given as input and exports them", async () => {
-    const { core, state } = fakeCore({ "sonar-web-base-url": "https://dev5.sc-dev5.io", "sonar-api-base-url": "https://api.sc-dev5.io" });
+  it("targets the custom API URL and audience given as input and exports only the token", async () => {
+    const { core, state } = fakeCore({ "sonar-api-base-url": "https://api.test.example", "oidc-audience": "https://audience.test.example" });
     const { fetchFn, calls } = replyingWith(200, SUCCESS_BODY);
 
     await run(core, { fetchFn });
 
-    assert.deepEqual(state.idTokenAudiences, ["https://dev5.sc-dev5.io"]);
-    assert.equal(calls[0].url, "https://api.sc-dev5.io/authentication/token");
-    assert.deepEqual(state.env, {
-      SONAR_TOKEN: "sqco_secret",
-      SONAR_SCANNER_SONARCLOUD_URL: "https://dev5.sc-dev5.io",
-      SONAR_SCANNER_API_BASE_URL: "https://api.sc-dev5.io",
-    });
+    assert.deepEqual(state.idTokenAudiences, ["https://audience.test.example"]);
+    assert.equal(calls[0].url, "https://api.test.example/authentication/token");
+    assert.deepEqual(state.env, { SONAR_TOKEN: "sqco_secret" });
   });
 
   it("does not export the environment when export-env is false", async () => {

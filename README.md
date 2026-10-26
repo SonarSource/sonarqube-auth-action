@@ -132,9 +132,9 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | Input | Default | Description |
 |---|---|---|
 | `sonar-region` | `eu` | SonarQube Cloud region: `eu` (`https://sonarcloud.io`) or `us` (`https://sonarqube.us`). |
-| `sonar-web-base-url` | | Advanced, for testing only: web URL of a custom SonarQube Cloud environment. Requires `sonar-api-base-url`. Cannot be combined with `sonar-region`. |
-| `sonar-api-base-url` | | Advanced, for testing only: API base URL of a custom SonarQube Cloud environment. Requires `sonar-web-base-url`. Cannot be combined with `sonar-region`. |
-| `export-env` | `true` | Export `SONAR_TOKEN` to the next steps of the job, with `SONAR_REGION` for the `us` region, or `SONAR_SCANNER_SONARCLOUD_URL` and `SONAR_SCANNER_API_BASE_URL` for custom URLs. |
+| `sonar-api-base-url` | | Advanced, for testing on non-production environments only: API base URL of the environment to exchange the token with. Requires `oidc-audience`. Cannot be combined with `sonar-region`. Configure the scanner for the same environment separately. |
+| `oidc-audience` | | Advanced, for testing on non-production environments only: audience of the GitHub OIDC token expected by that environment. Requires `sonar-api-base-url`. |
+| `export-env` | `true` | Export `SONAR_TOKEN` to the next steps of the job, with `SONAR_REGION` for the `us` region. |
 
 ## Outputs
 
