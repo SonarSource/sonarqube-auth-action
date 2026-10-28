@@ -17,7 +17,7 @@
 // Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
 
 import { exchangeToken } from "./exchange.js";
-import { DEFAULT_HOST_URL, resolveTarget } from "./hosts.js";
+import { resolveTarget } from "./hosts.js";
 
 const SECONDS_PER_MINUTE = 60;
 const SUMMARY_HEADING_LEVEL = 3;
@@ -37,10 +37,12 @@ function publishResult(core, target, result, exportEnv) {
   core.setOutput("sonar-token", result.accessToken);
   core.setOutput("organization", result.organization);
   core.setOutput("project-key", result.projectKey);
-  core.setOutput("sonar-host-url", target.hostUrl);
+  core.setOutput("sonar-region", target.scannerEnv.SONAR_REGION ?? "");
   if (exportEnv) {
     core.exportVariable("SONAR_TOKEN", result.accessToken);
-    core.exportVariable("SONAR_HOST_URL", target.hostUrl);
+    for (const [name, value] of Object.entries(target.scannerEnv)) {
+      core.exportVariable(name, value);
+    }
   }
 }
 
@@ -50,8 +52,8 @@ async function writeSummary(core, target, result) {
     await core.summary
       .addHeading("SonarQube trusted scan", SUMMARY_HEADING_LEVEL)
       .addTable([
-        [header("Host"), header("Organization"), header("Project")],
-        [target.hostUrl, result.organization, result.projectKey],
+        [header("API"), header("Organization"), header("Project")],
+        [target.apiUrl, result.organization, result.projectKey],
       ])
       .write();
   } catch (error) {
@@ -68,7 +70,11 @@ function describeExpiry(result) {
 
 export async function run(core, { fetchFn, sleepFn } = {}) {
   try {
-    const target = resolveTarget(core.getInput("sonar-host-url") || DEFAULT_HOST_URL);
+    const target = resolveTarget({
+      region: core.getInput("sonar-region"),
+      apiBaseUrl: core.getInput("sonar-api-base-url"),
+      audience: core.getInput("oidc-audience"),
+    });
     const exportEnv = core.getBooleanInput("export-env");
 
     const subjectToken = await requestOidcToken(core, target.audience);
