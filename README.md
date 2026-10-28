@@ -19,7 +19,7 @@ scoped to the project bound to the repository. Run it right before the
 
 - **No secret to store.** No `SONAR_TOKEN` to create, copy into GitHub secrets, rotate, or leak.
 - **Not tied to a person.** No personal token expires, and none needs revoking when its owner leaves.
-- **Short-lived.** The authorization lasts 30 minutes. An ephemeral token exposed in a log or a cache is of no use soon after.
+- **Short-lived.** The ephemeral token lasts 30 minutes. If it is exposed in a log or a cache, it is of no use soon after.
 - **Least privilege.** This token can only analyze the project bound to the repository, not the whole organization.
 - **One line.** The action exports the ephemeral token as `SONAR_TOKEN`, along with `SONAR_HOST_URL`.
   The scan action and the SonarScanners need no extra setup. The outputs cover every other case.
