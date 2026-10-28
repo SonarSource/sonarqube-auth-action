@@ -21,8 +21,8 @@ scoped to the project bound to the repository. Run it right before the
 - **Not tied to a person.** No personal token expires, and none needs revoking when its owner leaves.
 - **Short-lived.** The ephemeral token lasts 30 minutes. If it is exposed in a log or a cache, it is of no use soon after.
 - **Least privilege.** This token can only analyze the project bound to the repository, not the whole organization.
-- **One line.** The action exports the ephemeral token as `SONAR_TOKEN`, along with `SONAR_HOST_URL`.
-  The scan action and the SonarScanners need no extra setup. The outputs cover every other case.
+- **One line.** The action exports the ephemeral token as `SONAR_TOKEN`. The scan action and the SonarScanners need no extra setup.
+  The outputs cover every other case.
 
 ### What is SonarQube Cloud?
 
@@ -72,8 +72,8 @@ jobs:
 ```
 
 You do not need to create a `SONAR_TOKEN` secret.
-The action generates an ephemeral token and exports it as the `SONAR_TOKEN` environment variable,
-along with `SONAR_HOST_URL`, for the later steps of the job.
+The action generates an ephemeral token and exports it as the `SONAR_TOKEN` environment variable
+for the later steps of the job.
 
 The organization and project key come back with the token, as the `organization` and `project-key` outputs.
 The scanner needs both. Pass them with `args`.
@@ -93,13 +93,13 @@ Other scanners read the same outputs, for example Gradle:
 
 ### SonarQube Cloud US
 
-Set `sonar-host-url` to target the US instance. The default is the EU instance, `https://sonarcloud.io`.
+Set `sonar-region` to `us` to target the US instance, `https://sonarqube.us`. The default is the EU instance, `https://sonarcloud.io`.
 
 ```yaml
 - uses: SonarSource/sonarqube-auth-action@v1
   id: auth
   with:
-    sonar-host-url: https://sonarqube.us
+    sonar-region: us
 - uses: SonarSource/sonarqube-scan-action@v8
   with:
     args: >
@@ -107,7 +107,7 @@ Set `sonar-host-url` to target the US instance. The default is the EU instance, 
       -Dsonar.projectKey=${{ steps.auth.outputs.project-key }}
 ```
 
-With `export-env: true`, the action exports `SONAR_HOST_URL=https://sonarqube.us` together with the ephemeral token.
+With `export-env: true`, the action exports `SONAR_REGION=us` together with the ephemeral token.
 The scan step needs no other change.
 The organization and the project must be the ones of your SonarQube Cloud US account.
 
@@ -117,12 +117,12 @@ If you set `export-env: false`, pass the values to the scan yourself:
 - uses: SonarSource/sonarqube-auth-action@v1
   id: auth
   with:
-    sonar-host-url: https://sonarqube.us
+    sonar-region: us
     export-env: false
 - uses: SonarSource/sonarqube-scan-action@v8
   env:
     SONAR_TOKEN: ${{ steps.auth.outputs.sonar-token }}
-    SONAR_HOST_URL: ${{ steps.auth.outputs.sonar-host-url }}
+    SONAR_REGION: ${{ steps.auth.outputs.sonar-region }}
   with:
     args: >
       -Dsonar.organization=${{ steps.auth.outputs.organization }}
@@ -133,8 +133,10 @@ If you set `export-env: false`, pass the values to the scan yourself:
 
 | Input | Default | Description |
 |---|---|---|
-| `sonar-host-url` | `https://sonarcloud.io` | SonarQube Cloud instance: `https://sonarcloud.io` or `https://sonarqube.us`. |
-| `export-env` | `true` | Export the ephemeral token as `SONAR_TOKEN` and `SONAR_HOST_URL` to the next steps of the job. |
+| `sonar-region` | `eu` | SonarQube Cloud region: `eu` (`https://sonarcloud.io`) or `us` (`https://sonarqube.us`). |
+| `sonar-api-base-url` | | Advanced, for testing on non-production environments only: API base URL of the environment to exchange the token with. Requires `oidc-audience`. Cannot be combined with `sonar-region`. Configure the scanner for the same environment separately. |
+| `oidc-audience` | | Advanced, for testing on non-production environments only: audience of the GitHub OIDC token expected by that environment. Requires `sonar-api-base-url`. |
+| `export-env` | `true` | Export the ephemeral token as `SONAR_TOKEN` to the next steps of the job, with `SONAR_REGION` for the `us` region. |
 
 ## Outputs
 
@@ -143,7 +145,7 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | `sonar-token` | The ephemeral, project-scoped token. Masked in the logs. |
 | `organization` | Key of the organization that owns the project. |
 | `project-key` | Key of the project bound to the repository. |
-| `sonar-host-url` | The SonarQube Cloud instance that issued the token. |
+| `sonar-region` | Region to pass to the scanner as `SONAR_REGION`: `us` for the `us` region, empty for the `eu` region, which is the scanner default. |
 
 ## Security
 
@@ -160,7 +162,7 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | `No GitHub OIDC token is available to this job` | The job lacks the `id-token: write` permission. Add `permissions: id-token: write` to the job. GitHub does not grant it to pull requests from forks. |
 | `Access denied` | The organization has not enabled trusted scanning for GitHub Actions. Ask an administrator to enable it in the organization settings. |
 | `This repository is not bound to a SonarQube Cloud project` | Bind the repository to a project through the GitHub integration of SonarQube Cloud. |
-| `Unsupported sonar-host-url` | The URL is not one of the supported SonarQube Cloud instances. Use `https://sonarcloud.io` or `https://sonarqube.us`. |
+| `Unsupported sonar-region` | The region is not one of the supported SonarQube Cloud regions. Use `eu` or `us`. |
 | `HTTP 403` from the scanner, right after a successful exchange | The organization IP allow list does not include the IP address of the runner. Add it, or use a runner with a fixed IP address. |
 
 ## Development

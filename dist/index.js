@@ -21555,27 +21555,56 @@ async function exchangeToken(request, { fetchFn = proxyAwareFetch, sleepFn = def
 }
 
 // src/main/hosts.js
-var DEFAULT_HOST_URL = "https://sonarcloud.io";
-var SUPPORTED_HOSTNAMES = ["sonarcloud.io", "sonarqube.us"];
-function resolveTarget(rawHostUrl) {
+var DEFAULT_REGION = "eu";
+var REGIONS = {
+  eu: { apiUrl: "https://api.sonarcloud.io", audience: "https://sonarcloud.io", scannerEnv: {} },
+  us: { apiUrl: "https://api.sonarqube.us", audience: "https://sonarqube.us", scannerEnv: { SONAR_REGION: "us" } }
+};
+var SUPPORTED_REGIONS = Object.keys(REGIONS);
+var TOKEN_PATH = "/authentication/token";
+function toTarget(apiUrl, audience, scannerEnv) {
+  return { apiUrl, audience, endpoint: apiUrl + TOKEN_PATH, scannerEnv };
+}
+function resolveRegion(rawRegion) {
+  const region = rawRegion.trim().toLowerCase() || DEFAULT_REGION;
+  if (!Object.hasOwn(REGIONS, region)) {
+    throw new Error(`Unsupported sonar-region '${rawRegion}'. Supported regions: ${SUPPORTED_REGIONS.join(", ")}.`);
+  }
+  const { apiUrl, audience, scannerEnv } = REGIONS[region];
+  return toTarget(apiUrl, audience, scannerEnv);
+}
+function parseBaseUrl(inputName, rawUrl) {
   let url;
   try {
-    url = new URL(rawHostUrl.trim());
+    url = new URL(rawUrl);
   } catch {
-    throw new Error(`Invalid sonar-host-url '${rawHostUrl}': expected a URL such as ${DEFAULT_HOST_URL}.`);
+    throw new Error(`Invalid ${inputName} '${rawUrl}': expected an http or https URL.`);
   }
-  const hostname = url.hostname.toLowerCase();
-  if (url.protocol !== "https:" || !SUPPORTED_HOSTNAMES.includes(hostname)) {
-    const supported = SUPPORTED_HOSTNAMES.map((host) => "https://" + host).join(", ");
-    throw new Error(
-      `Unsupported sonar-host-url '${rawHostUrl}'. Trusted scanning with GitHub Actions is available on: ${supported}.`
-    );
+  if (url.protocol !== "https:" && url.protocol !== "http:") {
+    throw new Error(`Invalid ${inputName} '${rawUrl}': only http and https URLs are supported.`);
   }
-  return {
-    hostUrl: `https://${hostname}`,
-    audience: `https://${hostname}`,
-    endpoint: `https://api.${hostname}/authentication/token`
-  };
+  let baseUrl = `${url.origin}${url.pathname}`;
+  while (baseUrl.endsWith("/")) {
+    baseUrl = baseUrl.slice(0, -1);
+  }
+  return baseUrl;
+}
+function resolveTarget({ region = "", apiBaseUrl = "", audience = "" } = {}) {
+  const customApiUrl = apiBaseUrl.trim();
+  const customAudience = audience.trim();
+  if (!customApiUrl) {
+    if (customAudience) {
+      throw new Error("oidc-audience requires sonar-api-base-url.");
+    }
+    return resolveRegion(region);
+  }
+  if (region.trim()) {
+    throw new Error("sonar-region cannot be combined with sonar-api-base-url.");
+  }
+  if (!customAudience) {
+    throw new Error("sonar-api-base-url requires oidc-audience.");
+  }
+  return toTarget(parseBaseUrl("sonar-api-base-url", customApiUrl), customAudience, {});
 }
 
 // src/main/run.js
@@ -21594,18 +21623,20 @@ function publishResult(core, target, result, exportEnv) {
   core.setOutput("sonar-token", result.accessToken);
   core.setOutput("organization", result.organization);
   core.setOutput("project-key", result.projectKey);
-  core.setOutput("sonar-host-url", target.hostUrl);
+  core.setOutput("sonar-region", target.scannerEnv.SONAR_REGION ?? "");
   if (exportEnv) {
     core.exportVariable("SONAR_TOKEN", result.accessToken);
-    core.exportVariable("SONAR_HOST_URL", target.hostUrl);
+    for (const [name, value] of Object.entries(target.scannerEnv)) {
+      core.exportVariable(name, value);
+    }
   }
 }
 async function writeSummary(core, target, result) {
   const header = (data) => ({ data, header: true });
   try {
     await core.summary.addHeading("SonarQube trusted scan", SUMMARY_HEADING_LEVEL).addTable([
-      [header("Host"), header("Organization"), header("Project")],
-      [target.hostUrl, result.organization, result.projectKey]
+      [header("API"), header("Organization"), header("Project")],
+      [target.apiUrl, result.organization, result.projectKey]
     ]).write();
   } catch (error2) {
     core.debug(`Job summary not written: ${error2.message}`);
@@ -21619,7 +21650,11 @@ function describeExpiry(result) {
 }
 async function run(core, { fetchFn, sleepFn } = {}) {
   try {
-    const target = resolveTarget(core.getInput("sonar-host-url") || DEFAULT_HOST_URL);
+    const target = resolveTarget({
+      region: core.getInput("sonar-region"),
+      apiBaseUrl: core.getInput("sonar-api-base-url"),
+      audience: core.getInput("oidc-audience")
+    });
     const exportEnv = core.getBooleanInput("export-env");
     const subjectToken = await requestOidcToken(core, target.audience);
     const result = await exchangeToken(

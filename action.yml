@@ -8,15 +8,24 @@ branding:
   icon: log-in
   color: green
 inputs:
-  sonar-host-url:
+  sonar-region:
     description: >
-      URL of the SonarQube Cloud instance: https://sonarcloud.io (default) or https://sonarqube.us.
+      Region of the SonarQube Cloud instance: eu (default, https://sonarcloud.io) or us (https://sonarqube.us).
     required: false
-    default: https://sonarcloud.io
+  sonar-api-base-url:
+    description: >
+      Advanced, for testing on non-production environments only: API base URL of the SonarQube Cloud environment to exchange the token with.
+      Requires oidc-audience, and cannot be combined with sonar-region. Configure the scanner for the same environment separately.
+    required: false
+  oidc-audience:
+    description: >
+      Advanced, for testing on non-production environments only: audience of the GitHub OIDC token, as expected by the environment
+      of sonar-api-base-url. Requires sonar-api-base-url.
+    required: false
   export-env:
     description: >
-      Export the token and the host URL as the SONAR_TOKEN and SONAR_HOST_URL environment variables for the next steps of the job,
-      which is what the SonarQube scan action and the SonarScanner read. Set to false to only use the outputs.
+      Export the token as the SONAR_TOKEN environment variable for the next steps of the job, together with SONAR_REGION for the us region.
+      This is what the SonarQube scan action and the SonarScanners read. Set to false to only use the outputs.
     required: false
     default: "true"
 outputs:
@@ -26,8 +35,10 @@ outputs:
     description: Key of the SonarQube Cloud organization that owns the project
   project-key:
     description: Key of the SonarQube Cloud project bound to the repository
-  sonar-host-url:
-    description: URL of the SonarQube Cloud instance the token was issued by
+  sonar-region:
+    description: >
+      Value for the SONAR_REGION environment variable or the sonar.region property of the scanner:
+      us for the us region, empty for the eu region (the scanner default) and for sonar-api-base-url.
 runs:
   using: node24
   main: dist/index.js
