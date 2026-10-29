@@ -79,6 +79,31 @@ describe("exchangeToken", () => {
     });
   });
 
+  it("sends the project key when given", async () => {
+    const { fetchFn, calls } = scriptedFetch(reply(200, SUCCESS_BODY));
+
+    await exchangeToken({ ...REQUEST, projectKey: "acme_app" }, { fetchFn });
+
+    assert.equal(calls[0].options.body.get("project_key"), "acme_app");
+  });
+
+  it("omits the project key when empty", async () => {
+    const { fetchFn, calls } = scriptedFetch(reply(200, SUCCESS_BODY));
+
+    await exchangeToken({ ...REQUEST, projectKey: "" }, { fetchFn });
+
+    assert.equal(calls[0].options.body.has("project_key"), false);
+  });
+
+  it("explains how to fix a project key that matches no bound project", async () => {
+    const { fetchFn } = scriptedFetch(reply(404, { error: "invalid_grant", error_description: "Unknown project key" }));
+
+    await assert.rejects(
+      exchangeToken({ ...REQUEST, projectKey: "acme_other" }, { fetchFn }),
+      /project key 'acme_other' does not match any SonarQube Cloud project bound to this repository \(Unknown project key\).*project-key input/,
+    );
+  });
+
   it("tolerates a response without optional fields", async () => {
     const { fetchFn } = scriptedFetch(reply(200, { access_token: "sqco_secret" }));
 

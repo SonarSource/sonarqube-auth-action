@@ -12,7 +12,7 @@
 If you analyze code with [SonarQube Cloud](https://www.sonarsource.com/products/sonarqube/cloud/) in GitHub Actions,
 this action lets your workflow scan without any stored secret.
 It exchanges the ephemeral GitHub Actions OIDC token of the job for a short-lived SonarQube Cloud token,
-scoped to the project bound to the repository. Run it right before the
+scoped to a project bound to the repository. Run it right before the
 [SonarQube scan action](https://github.com/SonarSource/sonarqube-scan-action).
 
 ### Why use it?
@@ -20,7 +20,7 @@ scoped to the project bound to the repository. Run it right before the
 - **No secret to store.** No `SONAR_TOKEN` to create, copy into GitHub secrets, rotate, or leak.
 - **Not tied to a person.** No personal token expires, and none needs revoking when its owner leaves.
 - **Short-lived.** The ephemeral token lasts 30 minutes. If it is exposed in a log or a cache, it is of no use soon after.
-- **Least privilege.** This token can only analyze the project bound to the repository, not the whole organization.
+- **Least privilege.** This token can only analyze one project bound to the repository, not the whole organization.
 - **One line.** The action exports the ephemeral token as `SONAR_TOKEN`. The scan action and the SonarScanners need no extra setup.
   The outputs cover every other case.
 
@@ -91,6 +91,52 @@ Other scanners read the same outputs, for example Gradle:
       "sonar.projectKey": "${{ steps.auth.outputs.project-key }}"}
 ```
 
+### Monorepo
+
+A repository can be bound to several SonarQube Cloud projects, for example a monorepo with one project per module.
+The action cannot guess which project a job analyzes: set `project-key` to the key of the project to scan.
+Each token is scoped to that one project, so use one auth step per project.
+The key must be one of the projects bound to the repository, or the exchange fails.
+
+```yaml
+jobs:
+  sonarqube:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - uses: SonarSource/sonarqube-auth-action@v1
+        id: auth-frontend
+        with:
+          project-key: acme_frontend
+      - uses: SonarSource/sonarqube-scan-action@v8
+        with:
+          projectBaseDir: frontend
+          args: >
+            -Dsonar.organization=${{ steps.auth-frontend.outputs.organization }}
+            -Dsonar.projectKey=${{ steps.auth-frontend.outputs.project-key }}
+      - uses: SonarSource/sonarqube-auth-action@v1
+        id: auth-backend
+        with:
+          project-key: acme_backend
+      - uses: SonarSource/sonarqube-scan-action@v8
+        with:
+          projectBaseDir: backend
+          args: >
+            -Dsonar.organization=${{ steps.auth-backend.outputs.organization }}
+            -Dsonar.projectKey=${{ steps.auth-backend.outputs.project-key }}
+```
+
+With `export-env: true`, each auth step replaces `SONAR_TOKEN` for the steps that follow, so run each scan right after its own auth step.
+A token lasts 30 minutes, which is another reason to authenticate right before each scan.
+To scan the projects in parallel, give each one its own job, or its own matrix entry, with its own auth step.
+
+If the repository is bound to a single project, you can leave `project-key` out.
+
 ### SonarQube Cloud US
 
 Set `sonar-region` to `us` to target the US instance, `https://sonarqube.us`. The default is the EU instance, `https://sonarcloud.io`.
@@ -133,6 +179,7 @@ If you set `export-env: false`, pass the values to the scan yourself:
 
 | Input | Default | Description |
 |---|---|---|
+| `project-key` | | Key of the SonarQube Cloud project to get a token for. Required when the repository is bound to several projects (monorepo), optional otherwise. Must be a project bound to the repository. |
 | `sonar-region` | `eu` | SonarQube Cloud region: `eu` (`https://sonarcloud.io`) or `us` (`https://sonarqube.us`). |
 | `sonar-api-base-url` | | Advanced, for testing on non-production environments only: API base URL of the environment to exchange the token with. Requires `oidc-audience`. Cannot be combined with `sonar-region`. Configure the scanner for the same environment separately. |
 | `oidc-audience` | | Advanced, for testing on non-production environments only: audience of the GitHub OIDC token expected by that environment. Requires `sonar-api-base-url`. |
@@ -144,7 +191,7 @@ If you set `export-env: false`, pass the values to the scan yourself:
 |---|---|
 | `sonar-token` | The ephemeral, project-scoped token. Masked in the logs. |
 | `organization` | Key of the organization that owns the project. |
-| `project-key` | Key of the project bound to the repository. |
+| `project-key` | Key of the project the token is scoped to. |
 | `sonar-region` | Region to pass to the scanner as `SONAR_REGION`: `us` for the `us` region, empty for the `eu` region, which is the scanner default. |
 
 ## Security
@@ -162,6 +209,8 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | `No GitHub OIDC token is available to this job` | The job lacks the `id-token: write` permission. Add `permissions: id-token: write` to the job. GitHub does not grant it to pull requests from forks. |
 | `Access denied` | The organization has not enabled trusted scanning for GitHub Actions. Ask an administrator to enable it in the organization settings. |
 | `This repository is not bound to a SonarQube Cloud project` | Bind the repository to a project through the GitHub integration of SonarQube Cloud. |
+| `The project key '...' does not match any SonarQube Cloud project bound to this repository` | The `project-key` input is not one of the projects bound to the repository. Check the key for typos, and bind the project to the repository through the GitHub integration of SonarQube Cloud if needed. |
+| The exchange is rejected because the repository is bound to several projects | The repository is a monorepo and no `project-key` was given. Set the `project-key` input to the project this job scans. See [Monorepo](#monorepo). |
 | `Unsupported sonar-region` | The region is not one of the supported SonarQube Cloud regions. Use `eu` or `us`. |
 | `HTTP 403` from the scanner, right after a successful exchange | The organization IP allow list does not include the IP address of the runner. Add it, or use a runner with a fixed IP address. |
 

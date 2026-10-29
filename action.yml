@@ -1,7 +1,7 @@
 name: Official SonarQube Auth
 # Warning: changing name would change URL in the marketplace
 description: >
-  Exchange the GitHub Actions OIDC token for a short-lived SonarQube Cloud token scoped to the current repository's project.
+  Exchange the GitHub Actions OIDC token for a short-lived SonarQube Cloud token scoped to a project bound to the current repository.
   No stored secret required. Run it right before the SonarQube scan.
 
 branding:
@@ -11,6 +11,11 @@ inputs:
   sonar-region:
     description: >
       Region of the SonarQube Cloud instance: eu (default, https://sonarcloud.io) or us (https://sonarqube.us).
+    required: false
+  project-key:
+    description: >
+      Key of the SonarQube Cloud project to get a token for. Required when the repository is bound to several projects (monorepo),
+      to select one of them. Optional otherwise. Must be a project bound to the current repository.
     required: false
   sonar-api-base-url:
     description: >

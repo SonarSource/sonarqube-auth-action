@@ -21482,7 +21482,7 @@ function parseJson(text) {
     return {};
   }
 }
-function describeRejection(status, body) {
+function describeRejection(status, body, projectKey) {
   const detail = body.error_description || body.error || "no details provided";
   switch (status) {
     case HTTP_UNAUTHORIZED:
@@ -21490,30 +21490,37 @@ function describeRejection(status, body) {
     case HTTP_FORBIDDEN:
       return `Access denied: ${detail}. An administrator of the SonarQube Cloud organization must enable trusted scanning for GitHub Actions in the organization settings.`;
     case HTTP_NOT_FOUND:
+      if (projectKey) {
+        return `The project key '${projectKey}' does not match any SonarQube Cloud project bound to this repository (${detail}). Check the project-key input, then run the job again.`;
+      }
       return `This repository is not bound to a SonarQube Cloud project (${detail}). Bind it to a project through the GitHub integration of SonarQube Cloud, then run the job again.`;
     default:
       return `The token exchange was rejected with HTTP ${status}: ${detail}`;
   }
 }
-async function postExchange(fetchFn, { endpoint, audience, subjectToken }) {
+async function postExchange(fetchFn, { endpoint, audience, subjectToken, projectKey }) {
+  const form = new URLSearchParams({
+    grant_type: GRANT_TYPE,
+    subject_token: subjectToken,
+    subject_token_type: SUBJECT_TOKEN_TYPE,
+    audience
+  });
+  if (projectKey) {
+    form.set("project_key", projectKey);
+  }
   const response = await fetchFn(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: GRANT_TYPE,
-      subject_token: subjectToken,
-      subject_token_type: SUBJECT_TOKEN_TYPE,
-      audience
-    })
+    body: form
   });
   return { status: response.status, body: parseJson(await response.text()) };
 }
-function toResult(status, body) {
+function toResult(status, body, projectKey) {
   if (status >= HTTP_SERVER_ERROR) {
     throw new TransientError(`HTTP ${status}`);
   }
   if (status !== HTTP_OK) {
-    throw new Error(describeRejection(status, body));
+    throw new Error(describeRejection(status, body, projectKey));
   }
   if (!body.access_token) {
     throw new Error("The token exchange succeeded but the response contains no access_token.");
@@ -21532,7 +21539,7 @@ async function attemptExchange(fetchFn, request) {
   } catch (error2) {
     throw new TransientError(error2.message);
   }
-  return toResult(response.status, response.body);
+  return toResult(response.status, response.body, request.projectKey);
 }
 async function exchangeToken(request, { fetchFn = proxyAwareFetch, sleepFn = defaultSleep, log = () => {
 } } = {}) {
@@ -21656,9 +21663,10 @@ async function run(core, { fetchFn, sleepFn } = {}) {
       audience: core.getInput("oidc-audience")
     });
     const exportEnv = core.getBooleanInput("export-env");
+    const projectKey = core.getInput("project-key").trim();
     const subjectToken = await requestOidcToken(core, target.audience);
     const result = await exchangeToken(
-      { endpoint: target.endpoint, audience: target.audience, subjectToken },
+      { endpoint: target.endpoint, audience: target.audience, subjectToken, projectKey },
       { fetchFn, sleepFn, log: core.info }
     );
     publishResult(core, target, result, exportEnv);
