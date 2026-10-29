@@ -95,13 +95,16 @@ describe("exchangeToken", () => {
     assert.equal(calls[0].options.body.has("project_key"), false);
   });
 
-  it("explains how to fix a project key that matches no bound project", async () => {
-    const { fetchFn } = scriptedFetch(reply(404, { error: "invalid_grant", error_description: "Unknown project key" }));
+  it("reports the backend message when the project key is missing or unknown", async () => {
+    const { fetchFn, calls } = scriptedFetch(
+      reply(400, { error: "invalid_request", error_description: "Project key 'acme_other' does not match any bound project" }),
+    );
 
     await assert.rejects(
       exchangeToken({ ...REQUEST, projectKey: "acme_other" }, { fetchFn }),
-      /project key 'acme_other' does not match any SonarQube Cloud project bound to this repository \(Unknown project key\).*project-key input/,
+      /rejected with HTTP 400: Project key 'acme_other' does not match any bound project/,
     );
+    assert.equal(calls.length, 1);
   });
 
   it("tolerates a response without optional fields", async () => {

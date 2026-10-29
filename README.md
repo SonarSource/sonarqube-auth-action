@@ -209,8 +209,8 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | `No GitHub OIDC token is available to this job` | The job lacks the `id-token: write` permission. Add `permissions: id-token: write` to the job. GitHub does not grant it to pull requests from forks. |
 | `Access denied` | The organization has not enabled trusted scanning for GitHub Actions. Ask an administrator to enable it in the organization settings. |
 | `This repository is not bound to a SonarQube Cloud project` | Bind the repository to a project through the GitHub integration of SonarQube Cloud. |
-| `The project key '...' does not match any SonarQube Cloud project bound to this repository` | The `project-key` input is not one of the projects bound to the repository. Check the key for typos, and bind the project to the repository through the GitHub integration of SonarQube Cloud if needed. |
-| The exchange is rejected because the repository is bound to several projects | The repository is a monorepo and no `project-key` was given. Set the `project-key` input to the project this job scans. See [Monorepo](#monorepo). |
+| `Project key '...' does not match any SonarCloud project bound to repository` | The `project-key` input is not one of the projects bound to the repository. Check the key for typos, and bind the project to the repository through the GitHub integration of SonarQube Cloud if needed. |
+| `is bound to 2 SonarCloud projects. Provide the project_key of the project to analyze.` (the number is the count of projects bound to the repository) | The repository is a monorepo and no `project-key` was given. Set the `project-key` input to the project this job scans. See [Monorepo](#monorepo). |
 | `Unsupported sonar-region` | The region is not one of the supported SonarQube Cloud regions. Use `eu` or `us`. |
 | `HTTP 403` from the scanner, right after a successful exchange | The organization IP allow list does not include the IP address of the runner. Add it, or use a runner with a fixed IP address. |
 

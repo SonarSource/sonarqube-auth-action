@@ -21482,7 +21482,7 @@ function parseJson(text) {
     return {};
   }
 }
-function describeRejection(status, body, projectKey) {
+function describeRejection(status, body) {
   const detail = body.error_description || body.error || "no details provided";
   switch (status) {
     case HTTP_UNAUTHORIZED:
@@ -21490,9 +21490,6 @@ function describeRejection(status, body, projectKey) {
     case HTTP_FORBIDDEN:
       return `Access denied: ${detail}. An administrator of the SonarQube Cloud organization must enable trusted scanning for GitHub Actions in the organization settings.`;
     case HTTP_NOT_FOUND:
-      if (projectKey) {
-        return `The project key '${projectKey}' does not match any SonarQube Cloud project bound to this repository (${detail}). Check the project-key input, then run the job again.`;
-      }
       return `This repository is not bound to a SonarQube Cloud project (${detail}). Bind it to a project through the GitHub integration of SonarQube Cloud, then run the job again.`;
     default:
       return `The token exchange was rejected with HTTP ${status}: ${detail}`;
@@ -21515,12 +21512,12 @@ async function postExchange(fetchFn, { endpoint, audience, subjectToken, project
   });
   return { status: response.status, body: parseJson(await response.text()) };
 }
-function toResult(status, body, projectKey) {
+function toResult(status, body) {
   if (status >= HTTP_SERVER_ERROR) {
     throw new TransientError(`HTTP ${status}`);
   }
   if (status !== HTTP_OK) {
-    throw new Error(describeRejection(status, body, projectKey));
+    throw new Error(describeRejection(status, body));
   }
   if (!body.access_token) {
     throw new Error("The token exchange succeeded but the response contains no access_token.");
@@ -21539,7 +21536,7 @@ async function attemptExchange(fetchFn, request) {
   } catch (error2) {
     throw new TransientError(error2.message);
   }
-  return toResult(response.status, response.body, request.projectKey);
+  return toResult(response.status, response.body);
 }
 async function exchangeToken(request, { fetchFn = proxyAwareFetch, sleepFn = defaultSleep, log = () => {
 } } = {}) {
