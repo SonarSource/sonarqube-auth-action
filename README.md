@@ -94,8 +94,8 @@ Other scanners read the same outputs, for example Gradle:
 ### Monorepo
 
 A repository can be bound to several SonarQube Cloud projects, for example a monorepo with one project per module.
-The action cannot guess which project a job analyzes: set `project-key` to the key of the project to scan.
-Each token is scoped to that one project, so use one auth step per project.
+Set `project-key` to the key of the project that the job scans.
+Each token is scoped to that one project, so add one auth step per project.
 The key must be one of the projects bound to the repository, or the exchange fails.
 
 ```yaml
@@ -132,8 +132,8 @@ jobs:
 ```
 
 With `export-env: true`, each auth step replaces `SONAR_TOKEN` for the steps that follow, so run each scan right after its own auth step.
-A token lasts 30 minutes, which is another reason to authenticate right before each scan.
-To scan the projects in parallel, give each one its own job, or its own matrix entry, with its own auth step.
+Because a token lasts 30 minutes, authenticate right before each scan.
+To scan the projects in parallel, use one job per project (or a matrix), each with its own auth step.
 
 If the repository is bound to a single project, you can leave `project-key` out.
 
