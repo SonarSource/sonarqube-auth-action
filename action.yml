@@ -39,7 +39,7 @@ outputs:
   organization:
     description: Key of the SonarQube Cloud organization that owns the project
   project-key:
-    description: Key of the SonarQube Cloud project bound to the repository
+    description: Key of the SonarQube Cloud project the token is scoped to
   sonar-region:
     description: >
       Value for the SONAR_REGION environment variable or the sonar.region property of the scanner:
