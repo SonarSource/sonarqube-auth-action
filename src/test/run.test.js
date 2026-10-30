@@ -100,6 +100,24 @@ describe("run", () => {
     assert.equal(state.summaryWrites, 1);
   });
 
+  it("forwards the project key input, trimmed", async () => {
+    const { core } = fakeCore({ "project-key": " acme_app " });
+    const { fetchFn, calls } = replyingWith(200, SUCCESS_BODY);
+
+    await run(core, { fetchFn });
+
+    assert.equal(calls[0].options.body.get("project_key"), "acme_app");
+  });
+
+  it("sends no project key when the input is not set", async () => {
+    const { core } = fakeCore();
+    const { fetchFn, calls } = replyingWith(200, SUCCESS_BODY);
+
+    await run(core, { fetchFn });
+
+    assert.equal(calls[0].options.body.has("project_key"), false);
+  });
+
   it("never prints the token", async () => {
     const { core, state } = fakeCore();
     const { fetchFn } = replyingWith(200, SUCCESS_BODY);

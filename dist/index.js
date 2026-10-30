@@ -21495,16 +21495,20 @@ function describeRejection(status, body) {
       return `The token exchange was rejected with HTTP ${status}: ${detail}`;
   }
 }
-async function postExchange(fetchFn, { endpoint, audience, subjectToken }) {
+async function postExchange(fetchFn, { endpoint, audience, subjectToken, projectKey }) {
+  const form = new URLSearchParams({
+    grant_type: GRANT_TYPE,
+    subject_token: subjectToken,
+    subject_token_type: SUBJECT_TOKEN_TYPE,
+    audience
+  });
+  if (projectKey) {
+    form.set("project_key", projectKey);
+  }
   const response = await fetchFn(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: GRANT_TYPE,
-      subject_token: subjectToken,
-      subject_token_type: SUBJECT_TOKEN_TYPE,
-      audience
-    })
+    body: form
   });
   return { status: response.status, body: parseJson(await response.text()) };
 }
@@ -21656,9 +21660,10 @@ async function run(core, { fetchFn, sleepFn } = {}) {
       audience: core.getInput("oidc-audience")
     });
     const exportEnv = core.getBooleanInput("export-env");
+    const projectKey = core.getInput("project-key").trim();
     const subjectToken = await requestOidcToken(core, target.audience);
     const result = await exchangeToken(
-      { endpoint: target.endpoint, audience: target.audience, subjectToken },
+      { endpoint: target.endpoint, audience: target.audience, subjectToken, projectKey },
       { fetchFn, sleepFn, log: core.info }
     );
     publishResult(core, target, result, exportEnv);

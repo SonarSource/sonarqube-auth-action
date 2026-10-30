@@ -76,10 +76,11 @@ export async function run(core, { fetchFn, sleepFn } = {}) {
       audience: core.getInput("oidc-audience"),
     });
     const exportEnv = core.getBooleanInput("export-env");
+    const projectKey = core.getInput("project-key").trim();
 
     const subjectToken = await requestOidcToken(core, target.audience);
     const result = await exchangeToken(
-      { endpoint: target.endpoint, audience: target.audience, subjectToken },
+      { endpoint: target.endpoint, audience: target.audience, subjectToken, projectKey },
       { fetchFn, sleepFn, log: core.info },
     );
 

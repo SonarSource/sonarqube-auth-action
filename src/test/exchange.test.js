@@ -79,6 +79,34 @@ describe("exchangeToken", () => {
     });
   });
 
+  it("sends the project key when given", async () => {
+    const { fetchFn, calls } = scriptedFetch(reply(200, SUCCESS_BODY));
+
+    await exchangeToken({ ...REQUEST, projectKey: "acme_app" }, { fetchFn });
+
+    assert.equal(calls[0].options.body.get("project_key"), "acme_app");
+  });
+
+  it("omits the project key when empty", async () => {
+    const { fetchFn, calls } = scriptedFetch(reply(200, SUCCESS_BODY));
+
+    await exchangeToken({ ...REQUEST, projectKey: "" }, { fetchFn });
+
+    assert.equal(calls[0].options.body.has("project_key"), false);
+  });
+
+  it("reports the backend message when the project key is missing or unknown", async () => {
+    const { fetchFn, calls } = scriptedFetch(
+      reply(400, { error: "invalid_request", error_description: "Project key 'acme_other' does not match any bound project" }),
+    );
+
+    await assert.rejects(
+      exchangeToken({ ...REQUEST, projectKey: "acme_other" }, { fetchFn }),
+      /rejected with HTTP 400: Project key 'acme_other' does not match any bound project/,
+    );
+    assert.equal(calls.length, 1);
+  });
+
   it("tolerates a response without optional fields", async () => {
     const { fetchFn } = scriptedFetch(reply(200, { access_token: "sqco_secret" }));
 

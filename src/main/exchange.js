@@ -90,16 +90,20 @@ function describeRejection(status, body) {
   }
 }
 
-async function postExchange(fetchFn, { endpoint, audience, subjectToken }) {
+async function postExchange(fetchFn, { endpoint, audience, subjectToken, projectKey }) {
+  const form = new URLSearchParams({
+    grant_type: GRANT_TYPE,
+    subject_token: subjectToken,
+    subject_token_type: SUBJECT_TOKEN_TYPE,
+    audience,
+  });
+  if (projectKey) {
+    form.set("project_key", projectKey);
+  }
   const response = await fetchFn(endpoint, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: GRANT_TYPE,
-      subject_token: subjectToken,
-      subject_token_type: SUBJECT_TOKEN_TYPE,
-      audience,
-    }),
+    body: form,
   });
   return { status: response.status, body: parseJson(await response.text()) };
 }
