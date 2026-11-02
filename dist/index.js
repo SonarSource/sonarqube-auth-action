@@ -21488,7 +21488,7 @@ function describeRejection(status, body) {
     case HTTP_UNAUTHORIZED:
       return `SonarQube Cloud rejected the GitHub OIDC token: ${detail}`;
     case HTTP_FORBIDDEN:
-      return `Access denied: ${detail}. An administrator of the SonarQube Cloud organization must enable trusted scanning for GitHub Actions in the organization settings.`;
+      return `Access denied: ${detail}. An administrator of the SonarQube Cloud organization must enable Secretless scanning for GitHub Actions in the organization settings.`;
     case HTTP_NOT_FOUND:
       return `This repository is not bound to a SonarQube Cloud project (${detail}). Bind it to a project through the GitHub integration of SonarQube Cloud, then run the job again.`;
     default:
@@ -21617,7 +21617,7 @@ var SUMMARY_HEADING_LEVEL = 3;
 async function requestOidcToken(core, audience) {
   if (!process.env.ACTIONS_ID_TOKEN_REQUEST_URL) {
     throw new Error(
-      "No GitHub OIDC token is available to this job. Add 'permissions: id-token: write' to the job or the workflow. GitHub never grants this permission to workflows triggered by pull requests from forks, so trusted scanning cannot run for them."
+      "No GitHub OIDC token is available to this job. Add 'permissions: id-token: write' to the job or the workflow. GitHub never grants this permission to workflows triggered by pull requests from forks, so Secretless scanning cannot run for them."
     );
   }
   return core.getIDToken(audience);
@@ -21638,7 +21638,7 @@ function publishResult(core, target, result, exportEnv) {
 async function writeSummary(core, target, result) {
   const header = (data) => ({ data, header: true });
   try {
-    await core.summary.addHeading("SonarQube trusted scan", SUMMARY_HEADING_LEVEL).addTable([
+    await core.summary.addHeading("SonarQube Secretless scanning", SUMMARY_HEADING_LEVEL).addTable([
       [header("API"), header("Organization"), header("Project")],
       [target.apiUrl, result.organization, result.projectKey]
     ]).write();

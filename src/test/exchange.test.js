@@ -121,14 +121,14 @@ describe("exchangeToken", () => {
     await assert.rejects(exchangeToken(REQUEST, { fetchFn }), /contains no access_token/);
   });
 
-  it("explains how to fix an organization that has not enabled trusted scanning", async () => {
+  it("explains how to fix an organization that has not enabled Secretless scanning", async () => {
     const { fetchFn, calls } = scriptedFetch(
       reply(403, { error: "access_denied", error_description: "not enabled for this organization" }),
     );
 
     await assert.rejects(
       exchangeToken(REQUEST, { fetchFn }),
-      /Access denied: not enabled for this organization.*administrator.*enable trusted scanning/,
+      /Access denied: not enabled for this organization.*administrator.*enable Secretless scanning/,
     );
     assert.equal(calls.length, 1);
   });
