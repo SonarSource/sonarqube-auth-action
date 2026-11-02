@@ -15,7 +15,7 @@ Shared URLs are intentional; consult Marketing before replacing them. -->
 <!-- Marketing maintains this section. For wording changes, consult the relevant Product Marketing Manager (PMM).
 Repository CODEOWNERS review accuracy and merge changes. -->
 
-# Secretless scanning for SonarQube Cloud in GitLab CI/CD
+# Secretless scanning for SonarQube Cloud in GitHub Actions
 
 If you analyze code with [SonarQube Cloud](https://www.sonarsource.com/products/sonarqube/cloud/) in GitHub Actions,
 this action lets your workflow scan without any stored secret.
