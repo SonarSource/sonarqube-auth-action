@@ -82,7 +82,7 @@ function describeRejection(status, body) {
     case HTTP_UNAUTHORIZED:
       return `SonarQube Cloud rejected the GitHub OIDC token: ${detail}`;
     case HTTP_FORBIDDEN:
-      return `Access denied: ${detail}. An administrator of the SonarQube Cloud organization must enable trusted scanning for GitHub Actions in the organization settings.`;
+      return `Access denied: ${detail}. An administrator of the SonarQube Cloud organization must enable Secretless scanning for GitHub Actions in the organization settings.`;
     case HTTP_NOT_FOUND:
       return `This repository is not bound to a SonarQube Cloud project (${detail}). Bind it to a project through the GitHub integration of SonarQube Cloud, then run the job again.`;
     default:

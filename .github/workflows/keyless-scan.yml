@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   scan:
-    name: Run Scan using trusted scan (WIF)
+    name: Run scan using Secretless scanning (WIF)
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: github-ubuntu-latest-s
     permissions:
