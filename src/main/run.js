@@ -26,7 +26,7 @@ async function requestOidcToken(core, audience) {
   if (!process.env.ACTIONS_ID_TOKEN_REQUEST_URL) {
     throw new Error(
       "No GitHub OIDC token is available to this job. Add 'permissions: id-token: write' to the job or the workflow. " +
-        "GitHub never grants this permission to workflows triggered by pull requests from forks, so Secretless scanning cannot run for them.",
+        "GitHub never grants this permission to workflows triggered by pull requests from forks, so Secretless analysis cannot run for them.",
     );
   }
   return core.getIDToken(audience);
@@ -50,7 +50,7 @@ async function writeSummary(core, target, result) {
   const header = (data) => ({ data, header: true });
   try {
     await core.summary
-      .addHeading("SonarQube Secretless scanning", SUMMARY_HEADING_LEVEL)
+      .addHeading("SonarQube Secretless analysis", SUMMARY_HEADING_LEVEL)
       .addTable([
         [header("API"), header("Organization"), header("Project")],
         [target.apiUrl, result.organization, result.projectKey],

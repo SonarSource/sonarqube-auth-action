@@ -15,7 +15,7 @@ Shared URLs are intentional; consult Marketing before replacing them. -->
 <!-- Marketing maintains this section. For wording changes, consult the relevant Product Marketing Manager (PMM).
 Repository CODEOWNERS review accuracy and merge changes. -->
 
-# Secretless scanning for SonarQube Cloud in GitHub Actions
+# Secretless analysis for SonarQube Cloud in GitHub Actions
 
 If you analyze code with [SonarQube Cloud](https://www.sonarsource.com/products/sonarqube/cloud/) in GitHub Actions,
 this action lets your workflow scan without any stored secret.
@@ -43,7 +43,7 @@ Continue to the [quick start](#quick-start) to configure authentication for your
 Before you add the action, check that:
 
 - The repository is bound to a project in SonarQube Cloud, through the GitHub integration.
-- An administrator of the SonarQube Cloud organization has enabled Secretless scanning for GitHub Actions in the organization settings.
+- An administrator of the SonarQube Cloud organization has enabled Secretless analysis for GitHub Actions in the organization settings.
 - The job has the `id-token: write` permission.
 - If the organization restricts access with an IP allow list, the runner must run from an allowed IP address.
   GitHub-hosted runners with shared IP addresses cannot be added to an allow list.
@@ -212,7 +212,7 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | Message | Cause and fix |
 |---|---|
 | `No GitHub OIDC token is available to this job` | The job lacks the `id-token: write` permission. Add `permissions: id-token: write` to the job. GitHub does not grant it to pull requests from forks. |
-| `Access denied` | The organization has not enabled Secretless scanning for GitHub Actions. Ask an administrator to enable it in the organization settings. |
+| `Access denied` | The organization has not enabled Secretless analysis for GitHub Actions. Ask an administrator to enable it in the organization settings. |
 | `This repository is not bound to a SonarQube Cloud project` | Bind the repository to a project through the GitHub integration of SonarQube Cloud. |
 | `Project key '...' does not match any SonarCloud project bound to repository` | The `project-key` input is not one of the projects bound to the repository. Check the key for typos, and bind the project to the repository through the GitHub integration of SonarQube Cloud if needed. |
 | `is bound to 2 SonarCloud projects. Provide the project_key of the project to analyze.` (the number is the count of projects bound to the repository) | The repository is a monorepo and no `project-key` was given. Set the `project-key` input to the project this job scans. See [Monorepo](#monorepo). |
