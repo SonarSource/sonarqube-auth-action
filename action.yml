@@ -1,8 +1,6 @@
-name: Official SonarQube Auth
+name: SonarQube OIDC Authentication
 # Warning: changing name would change URL in the marketplace
-description: >
-  Exchange the GitHub Actions OIDC token for a short-lived SonarQube Cloud token scoped to a project bound to the current repository.
-  No stored secret required. Run it right before the SonarQube scan.
+description: Exchange the GitHub OIDC token for a short-lived SonarQube Cloud token. No stored secret required.
 
 branding:
   icon: log-in
