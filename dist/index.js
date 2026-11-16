@@ -21562,7 +21562,8 @@ async function exchangeToken(request, { fetchFn = proxyAwareFetch, sleepFn = def
 var DEFAULT_REGION = "eu";
 var REGIONS = {
   eu: { apiUrl: "https://api.sonarcloud.io", audience: "https://sonarcloud.io", scannerEnv: {} },
-  us: { apiUrl: "https://api.sonarqube.us", audience: "https://sonarqube.us", scannerEnv: { SONAR_REGION: "us" } }
+  us: { apiUrl: "https://api.sonarqube.us", audience: "https://sonarqube.us", scannerEnv: { SONAR_REGION: "us" } },
+  au: { apiUrl: "https://api.sonarqube.au", audience: "https://sonarqube.au", scannerEnv: { SONAR_REGION: "au" } }
 };
 var SUPPORTED_REGIONS = Object.keys(REGIONS);
 var TOKEN_PATH = "/authentication/token";

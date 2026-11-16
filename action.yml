@@ -8,7 +8,7 @@ branding:
 inputs:
   sonar-region:
     description: >
-      Region of the SonarQube Cloud instance: eu (default, https://sonarcloud.io) or us (https://sonarqube.us).
+      Region of the SonarQube Cloud instance: eu (default, https://sonarcloud.io), us (https://sonarqube.us), or au (Australia, https://sonarqube.au).
     required: false
   project-key:
     description: >
@@ -27,7 +27,7 @@ inputs:
     required: false
   export-env:
     description: >
-      Export the token as the SONAR_TOKEN environment variable for the next steps of the job, together with SONAR_REGION for the us region.
+      Export the token as the SONAR_TOKEN environment variable for the next steps of the job, together with SONAR_REGION for the US and Australian regions.
       This is what the SonarQube scan action and the SonarScanners read. Set to false to only use the outputs.
     required: false
     default: "true"
@@ -41,7 +41,7 @@ outputs:
   sonar-region:
     description: >
       Value for the SONAR_REGION environment variable or the sonar.region property of the scanner:
-      us for the us region, empty for the eu region (the scanner default) and for sonar-api-base-url.
+      us for the US region, au for the Australian region, empty for the EU region (the scanner default) and for sonar-api-base-url.
 runs:
   using: node24
   main: dist/index.js

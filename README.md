@@ -142,9 +142,10 @@ To scan the projects in parallel, use one job per project (or a matrix), each wi
 
 If the repository is bound to a single project, you can leave `project-key` out.
 
-### SonarQube Cloud US
+### SonarQube Cloud US and Australia
 
-Set `sonar-region` to `us` to target the US instance, `https://sonarqube.us`. The default is the EU instance, `https://sonarcloud.io`.
+Set `sonar-region` to `us` to target the US instance, `https://sonarqube.us`, or `au` to target the Australian instance, `https://sonarqube.au`.
+The default is the EU instance, `https://sonarcloud.io`.
 
 ```yaml
 - uses: SonarSource/sonarqube-auth-action@v1
@@ -158,9 +159,11 @@ Set `sonar-region` to `us` to target the US instance, `https://sonarqube.us`. Th
       -Dsonar.projectKey=${{ steps.auth.outputs.project-key }}
 ```
 
-With `export-env: true`, the action exports `SONAR_REGION=us` together with the ephemeral token.
+For Australia, use the same workflow with `sonar-region: au`.
+
+With `export-env: true`, the action exports `SONAR_REGION=us` or `SONAR_REGION=au` together with the ephemeral token.
 The scan step needs no other change.
-The organization and the project must be the ones of your SonarQube Cloud US account.
+The organization and the project must belong to your account in the selected SonarQube Cloud region.
 
 If you set `export-env: false`, pass the values to the scan yourself:
 
@@ -185,10 +188,10 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | Input | Default | Description |
 |---|---|---|
 | `project-key` | | Key of the SonarQube Cloud project to get a token for. Required when the repository is bound to several projects (monorepo), optional otherwise. Must be a project bound to the repository. |
-| `sonar-region` | `eu` | SonarQube Cloud region: `eu` (`https://sonarcloud.io`) or `us` (`https://sonarqube.us`). |
+| `sonar-region` | `eu` | SonarQube Cloud region: `eu` (`https://sonarcloud.io`), `us` (`https://sonarqube.us`), or `au` (Australia, `https://sonarqube.au`). |
 | `sonar-api-base-url` | | Advanced, for testing on non-production environments only: API base URL of the environment to exchange the token with. Requires `oidc-audience`. Cannot be combined with `sonar-region`. Configure the scanner for the same environment separately. |
 | `oidc-audience` | | Advanced, for testing on non-production environments only: audience of the GitHub OIDC token expected by that environment. Requires `sonar-api-base-url`. |
-| `export-env` | `true` | Export the ephemeral token as `SONAR_TOKEN` to the next steps of the job, with `SONAR_REGION` for the `us` region. |
+| `export-env` | `true` | Export the ephemeral token as `SONAR_TOKEN` to the next steps of the job, with `SONAR_REGION` for the US and Australian regions. |
 
 ## Outputs
 
@@ -197,7 +200,7 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | `sonar-token` | The ephemeral, project-scoped token. Masked in the logs. |
 | `organization` | Key of the organization that owns the project. |
 | `project-key` | Key of the project the token is scoped to. |
-| `sonar-region` | Region to pass to the scanner as `SONAR_REGION`: `us` for the `us` region, empty for the `eu` region, which is the scanner default. |
+| `sonar-region` | Region to pass to the scanner as `SONAR_REGION`: `us` for the US region, `au` for the Australian region, empty for the EU region, which is the scanner default. |
 
 ## Security
 
@@ -216,7 +219,7 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | `This repository is not bound to a SonarQube Cloud project` | Bind the repository to a project through the GitHub integration of SonarQube Cloud. |
 | `Project key '...' does not match any SonarCloud project bound to repository` | The `project-key` input is not one of the projects bound to the repository. Check the key for typos, and bind the project to the repository through the GitHub integration of SonarQube Cloud if needed. |
 | `is bound to 2 SonarCloud projects. Provide the project_key of the project to analyze.` (the number is the count of projects bound to the repository) | The repository is a monorepo and no `project-key` was given. Set the `project-key` input to the project this job scans. See [Monorepo](#monorepo). |
-| `Unsupported sonar-region` | The region is not one of the supported SonarQube Cloud regions. Use `eu` or `us`. |
+| `Unsupported sonar-region` | The region is not one of the supported SonarQube Cloud regions. Use `eu`, `us`, or `au`. |
 | `HTTP 403` from the scanner, right after a successful exchange | The organization IP allow list does not include the IP address of the runner. Add it, or use a runner with a fixed IP address. |
 
 ## Development
