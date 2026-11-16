@@ -152,6 +152,23 @@ describe("run", () => {
     assert.equal(state.outputs["sonar-region"], "us");
   });
 
+  for (const exportEnv of ["true", "false"]) {
+    it(`targets AU and publishes its region with export-env=${exportEnv}`, async () => {
+      const { core, state } = fakeCore({ "sonar-region": "au", "export-env": exportEnv });
+      const { fetchFn, calls } = replyingWith(200, SUCCESS_BODY);
+
+      await run(core, { fetchFn });
+
+      assert.equal(state.failure, undefined);
+      assert.deepEqual(state.idTokenAudiences, ["https://sonarqube.au"]);
+      assert.equal(calls[0].url, "https://api.sonarqube.au/authentication/token");
+      assert.equal(calls[0].options.body.get("audience"), "https://sonarqube.au");
+      assert.equal(state.outputs["sonar-token"], "sqco_secret");
+      assert.equal(state.outputs["sonar-region"], "au");
+      assert.deepEqual(state.env, exportEnv === "true" ? { SONAR_TOKEN: "sqco_secret", SONAR_REGION: "au" } : {});
+    });
+  }
+
   it("targets the custom API URL and audience given as input and exports only the token", async () => {
     const { core, state } = fakeCore({ "sonar-api-base-url": "https://api.test.example", "oidc-audience": "https://audience.test.example" });
     const { fetchFn, calls } = replyingWith(200, SUCCESS_BODY);

@@ -21,6 +21,7 @@ export const DEFAULT_REGION = "eu";
 const REGIONS = {
   eu: { apiUrl: "https://api.sonarcloud.io", audience: "https://sonarcloud.io", scannerEnv: {} },
   us: { apiUrl: "https://api.sonarqube.us", audience: "https://sonarqube.us", scannerEnv: { SONAR_REGION: "us" } },
+  au: { apiUrl: "https://api.sonarqube.au", audience: "https://sonarqube.au", scannerEnv: { SONAR_REGION: "au" } },
 };
 
 export const SUPPORTED_REGIONS = Object.keys(REGIONS);

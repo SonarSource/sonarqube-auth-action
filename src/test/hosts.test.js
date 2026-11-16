@@ -46,12 +46,22 @@ describe("resolveTarget", () => {
     });
   });
 
+  it("resolves the AU region and sets SONAR_REGION", () => {
+    assert.deepEqual(resolveTarget({ region: "au" }), {
+      apiUrl: "https://api.sonarqube.au",
+      audience: "https://sonarqube.au",
+      endpoint: "https://api.sonarqube.au/authentication/token",
+      scannerEnv: { SONAR_REGION: "au" },
+    });
+    assert.equal(resolveTarget({ region: "  AU " }).apiUrl, "https://api.sonarqube.au");
+  });
+
   it("ignores the case and surrounding whitespace of the region", () => {
     assert.equal(resolveTarget({ region: "  US " }).apiUrl, "https://api.sonarqube.us");
   });
 
   it("rejects an unsupported region and lists the supported ones", () => {
-    assert.throws(() => resolveTarget({ region: "mars" }), /Unsupported sonar-region 'mars'\. Supported regions: eu, us\./);
+    assert.throws(() => resolveTarget({ region: "mars" }), /Unsupported sonar-region 'mars'\. Supported regions: eu, us, au\./);
   });
 
   it("rejects a region name inherited from the object prototype", () => {
