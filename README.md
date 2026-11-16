@@ -142,9 +142,9 @@ To scan the projects in parallel, use one job per project (or a matrix), each wi
 
 If the repository is bound to a single project, you can leave `project-key` out.
 
-### SonarQube Cloud US and AU
+### SonarQube Cloud US and Australia
 
-Set `sonar-region` to `us` to target the US instance, `https://sonarqube.us`, or `au` to target the AU instance, `https://sonarqube.au`.
+Set `sonar-region` to `us` to target the US instance, `https://sonarqube.us`, or `au` to target the Australian instance, `https://sonarqube.au`.
 The default is the EU instance, `https://sonarcloud.io`.
 
 ```yaml
@@ -159,7 +159,7 @@ The default is the EU instance, `https://sonarcloud.io`.
       -Dsonar.projectKey=${{ steps.auth.outputs.project-key }}
 ```
 
-For AU, use the same workflow with `sonar-region: au`.
+For Australia, use the same workflow with `sonar-region: au`.
 
 With `export-env: true`, the action exports `SONAR_REGION=us` or `SONAR_REGION=au` together with the ephemeral token.
 The scan step needs no other change.
@@ -188,10 +188,10 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | Input | Default | Description |
 |---|---|---|
 | `project-key` | | Key of the SonarQube Cloud project to get a token for. Required when the repository is bound to several projects (monorepo), optional otherwise. Must be a project bound to the repository. |
-| `sonar-region` | `eu` | SonarQube Cloud region: `eu` (`https://sonarcloud.io`), `us` (`https://sonarqube.us`), or `au` (`https://sonarqube.au`). |
+| `sonar-region` | `eu` | SonarQube Cloud region: `eu` (`https://sonarcloud.io`), `us` (`https://sonarqube.us`), or `au` (Australia, `https://sonarqube.au`). |
 | `sonar-api-base-url` | | Advanced, for testing on non-production environments only: API base URL of the environment to exchange the token with. Requires `oidc-audience`. Cannot be combined with `sonar-region`. Configure the scanner for the same environment separately. |
 | `oidc-audience` | | Advanced, for testing on non-production environments only: audience of the GitHub OIDC token expected by that environment. Requires `sonar-api-base-url`. |
-| `export-env` | `true` | Export the ephemeral token as `SONAR_TOKEN` to the next steps of the job, with `SONAR_REGION` for the `us` and `au` regions. |
+| `export-env` | `true` | Export the ephemeral token as `SONAR_TOKEN` to the next steps of the job, with `SONAR_REGION` for the US and Australian regions. |
 
 ## Outputs
 
@@ -200,7 +200,7 @@ If you set `export-env: false`, pass the values to the scan yourself:
 | `sonar-token` | The ephemeral, project-scoped token. Masked in the logs. |
 | `organization` | Key of the organization that owns the project. |
 | `project-key` | Key of the project the token is scoped to. |
-| `sonar-region` | Region to pass to the scanner as `SONAR_REGION`: `us` for the `us` region, `au` for the `au` region, empty for the `eu` region, which is the scanner default. |
+| `sonar-region` | Region to pass to the scanner as `SONAR_REGION`: `us` for the US region, `au` for the Australian region, empty for the EU region, which is the scanner default. |
 
 ## Security
 
